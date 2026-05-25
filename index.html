@@ -78,18 +78,16 @@
     body:not([data-mode="learn"]) .learn-view { display: none; }
     body[data-mode="learn"] .learn-view { display: block; }
 
-    /* Scroll-snap in game modes only: a small accidental scroll bounces back
-       to the game; reaching the analytics requires a deliberate full swipe
-       (or the tap-on-stats handler that does scrollIntoView). Learn mode
-       keeps natural scrolling since the article is meant to be read top-down. */
-    body[data-mode="practice"],
-    body[data-mode="play"] {
+    /* Scroll-snap in game modes only. Has to live on <html> because that's
+       the actual scrolling element on mobile Safari (snap-type on <body>
+       is silently ignored when the html element is the scroll container).
+       JS toggles html.snap-mode based on the current tab.
+       Learn keeps natural scrolling so the article is readable top-down. */
+    html.snap-mode {
       scroll-snap-type: y mandatory;
     }
-    body[data-mode="practice"] .app,
-    body[data-mode="play"] .app,
-    body[data-mode="practice"] .analytics,
-    body[data-mode="play"] .analytics {
+    html.snap-mode .app,
+    html.snap-mode .analytics {
       scroll-snap-align: start;
       scroll-snap-stop: always;
     }
@@ -742,6 +740,8 @@
           if (m === 'play' || m === 'learn') mode = m;
         } catch {}
         document.body.dataset.mode = mode;
+        // Scroll-snap belongs on <html> (the actual scroll element); JS owns it.
+        document.documentElement.classList.toggle('snap-mode', mode !== 'learn');
         document.querySelector(`.mode-tab[data-mode="${mode}"]`)?.classList.add('active');
         const labels = mode === 'play'
           ? ['net', 'ev loss', 'hands']
@@ -952,13 +952,16 @@
   <section class="analytics" id="analytics"></section>
 
   <script>
-    // Aggressively flush stale clients in case anything ever registered a
-    // service worker or stashed something in the cache storage API.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
-    }
+    // Register a no-cache service worker so every JS module fetch goes to
+    // the network. Without it iOS Safari pins ES module subresources for
+    // an eternity, no matter what cache-control headers the HTML carries.
+    // Also empty any Cache Storage entries from the older "unregister all"
+    // bootstrap so we don't get half-and-half behaviour.
     if ('caches' in window) {
       caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     }
   </script>
   <script type="module" src="js/app.js"></script>

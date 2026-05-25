@@ -7,7 +7,11 @@
   <meta http-equiv="refresh" content="0; url=index.html">
   <script>
     // Learn is now an inline view in index.html. Persist the chosen mode so
-    // the user lands directly on Learn after the redirect.
+    // the user lands directly on Learn after the redirect. Register the
+    // no-cache SW too so subsequent loads stay fresh.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
     try {
       const raw = localStorage.getItem('blackjack-trainer:v1');
       const data = raw ? JSON.parse(raw) : {};

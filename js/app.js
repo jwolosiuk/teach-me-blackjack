@@ -97,6 +97,7 @@ function switchMode(name) {
   }
   currentMode = name;
   document.body.dataset.mode = name;
+  document.documentElement.classList.toggle('snap-mode', name !== 'learn');
   for (const tab of document.querySelectorAll('.mode-tab')) {
     tab.classList.toggle('active', tab.dataset.mode === name);
   }
@@ -321,12 +322,12 @@ document.querySelectorAll('.header .stat').forEach(el => {
 const SWIPE_MIN_DX = 60;
 const SWIPE_MAX_DY_RATIO = 1.5;
 const SWIPEABLE_MODES = ['practice', 'play', 'learn'];
-// Don't arm the swipe handler when the touch starts on a tappable control
-// — otherwise a tap can be misread as a tiny swipe (or its click swallowed
-// on some iOS builds). Expandable category rows (details/summary) are NOT
-// in this list any more so swiping over a category still switches tabs;
-// the touch threshold keeps short taps from triggering a switch.
-const SWIPE_IGNORE_SELECTOR = 'button, a, .mode-tabs, .actions, .header';
+// Only bail out on touch starts inside elements where a tab swipe makes no
+// sense — links and the tab strip itself. Buttons (action keys, timer
+// toggle) and details/summary used to be excluded too, but the user wanted
+// swipe to work over them; the 60px / 1.5x dy threshold already keeps short
+// taps from triggering a tab switch, and the underlying click still fires.
+const SWIPE_IGNORE_SELECTOR = 'a, .mode-tabs';
 let swipeStartX = 0, swipeStartY = 0, swipeActive = false;
 
 document.addEventListener('touchstart', e => {
