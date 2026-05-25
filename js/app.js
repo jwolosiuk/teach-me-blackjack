@@ -84,9 +84,17 @@ function persist() {
   }
 }
 
+// Per-mode scroll positions so switching tabs doesn't carry the scroll
+// state of one view into another (e.g. scrolling deep into the Learn
+// article and then jumping into Play shouldn't land you mid-analytics).
+const modeScrollY = {};
+
 function switchMode(name) {
   if (currentMode === name) return;
-  if (currentMode) modes[currentMode].deactivate();
+  if (currentMode) {
+    modeScrollY[currentMode] = window.scrollY;
+    modes[currentMode].deactivate();
+  }
   currentMode = name;
   document.body.dataset.mode = name;
   for (const tab of document.querySelectorAll('.mode-tab')) {
@@ -102,6 +110,10 @@ function switchMode(name) {
   });
   modes[name].renderStats();
   modes[name].activate();
+  // Restore (or zero) this mode's scroll after the DOM has settled into
+  // its new shape — heights and visibility changed, so doing it inline
+  // would be racing the layout.
+  requestAnimationFrame(() => window.scrollTo(0, modeScrollY[name] ?? 0));
   persist();
 }
 
