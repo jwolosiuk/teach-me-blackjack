@@ -1,4 +1,10 @@
 const WINDOW = 100;
+// Rolling window per (cat, subType) bucket. Drives the practice deal's
+// exploitation weight so it tracks the player's recent skill rather than
+// their lifetime cumulative cost — old mistakes age out, recent improvement
+// drops the weight, non-stationarity handled cleanly. 30 ≈ 1-2 minutes of
+// practice in one bucket, enough sample to smooth single-deal noise.
+export const BUCKET_WINDOW = 30;
 
 const CATEGORIES = ['mimic', 'hardTotals', 'double', 'split', 'surrender', 'adjust'];
 // Every possible byCategory sub-bucket key. Most categories only populate two
@@ -7,7 +13,7 @@ const CATEGORIES = ['mimic', 'hardTotals', 'double', 'split', 'surrender', 'adju
 const SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];
 
 function emptyTypeBucket() {
-  return { total: 0, correct: 0, cost: 0 };
+  return { total: 0, correct: 0, cost: 0, recent: [] };
 }
 
 function emptyCategoryEntry() {
@@ -40,7 +46,9 @@ export function migrateStats(stats) {
       else {
         if (!stats.byCategory[c].byType) stats.byCategory[c].byType = {};
         for (const t of SUB_TYPES) {
-          if (!stats.byCategory[c].byType[t]) stats.byCategory[c].byType[t] = emptyTypeBucket();
+          const bt = stats.byCategory[c].byType[t];
+          if (!bt) stats.byCategory[c].byType[t] = emptyTypeBucket();
+          else if (!Array.isArray(bt.recent)) bt.recent = [];  // lazy-add for older saves
         }
       }
     }
@@ -97,6 +105,8 @@ export function updateStats(stats, { result, type, category, subType }) {
       bt.total++;
       if (result.correct) bt.correct++;
       bt.cost += result.cost;
+      bt.recent.push({ correct: result.correct, cost: result.cost });
+      if (bt.recent.length > BUCKET_WINDOW) bt.recent.shift();
     }
   }
 }
@@ -158,6 +168,8 @@ export function recordPlayDecision(stats, { correct, cost, category, subType }) 
       bt.total++;
       if (correct) bt.correct++;
       bt.cost += cost;
+      bt.recent.push({ correct, cost });
+      if (bt.recent.length > BUCKET_WINDOW) bt.recent.shift();
     }
   }
 }

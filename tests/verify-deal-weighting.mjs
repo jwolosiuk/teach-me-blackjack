@@ -38,7 +38,16 @@ for (const [k, v] of Object.entries(baseline)) {
 // 2. Surrender is the only leaky bucket. With weighting we expect to see
 //    surrender pulled way above its baseline share even though it's a rare
 //    cell in the chart.
-function bucket(total, correct, cost) { return { total, correct, cost }; }
+//
+// Bucket factory: also seeds a recent[] window (capped at 30) with the
+// same avg cost — that's what the sampler actually reads from.
+function bucket(total, correct, cost) {
+  const recentN = Math.min(total, 30);
+  const avgCost = total > 0 ? cost / total : 0;
+  const recent = [];
+  for (let i = 0; i < recentN; i++) recent.push({ correct: i < correct, cost: avgCost });
+  return { total, correct, cost, recent };
+}
 function entry(total, correct, cost, byType) {
   const types = { hard: bucket(0,0,0), soft: bucket(0,0,0), pair: bucket(0,0,0), always: bucket(0,0,0), mixed: bucket(0,0,0) };
   Object.assign(types, byType);

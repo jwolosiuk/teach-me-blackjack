@@ -2,12 +2,13 @@
 //
 // 25% of every deal is uniform random across the (category, subType)
 // buckets — pick a bucket, then pick a random cell inside. With ~10
-// active buckets (mimic-hard, mimic-soft, hardTotals-hard, …) every
-// sub-skill gets equal exploration time regardless of how many cells
-// it owns in the chart.
+// active buckets every sub-skill gets equal exploration time regardless
+// of how many cells it owns in the chart.
 // The remaining 75% is exploitation: weighted by the player's per-bucket
-// observed EV loss (cost / total). New users with no stats fall back to
-// the same uniform exploration on every deal.
+// avg EV loss over a rolling window of the last 30 decisions in that
+// bucket. Recent improvement makes a bucket's weight drop quickly; one
+// old mistake doesn't haunt the user indefinitely. Buckets with no recent
+// observations have zero exploit weight, so exploration alone seeds them.
 
 import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './strategy-table.js';
 import { classifyDecision, getOptimalAction } from './strategy.js';
@@ -103,15 +104,18 @@ function cellToSituation(cell) {
   return { hand: shuffle(hand), upcard: cell.upcard, type: cell.kind };
 }
 
-// Pick a (cat, type) bucket key proportional to the player's cost / total
-// in that bucket. Returns null when there's no observed loss anywhere yet.
+// Pick a (cat, subType) bucket key proportional to avg ev loss in the
+// bucket's recent window (cost / n). Falls back to null when no bucket
+// has any recent observations — caller switches to exploration.
 function pickWeightedBucketKey(stats) {
   const keys = Object.keys(BUCKETS);
   const weights = keys.map(key => {
-    const [cat, type] = key.split('-');
-    const b = stats?.byCategory?.[cat]?.byType?.[type];
-    if (!b || b.total === 0 || b.cost <= 0) return 0;
-    return b.cost / b.total;
+    const [cat, sub] = key.split('-');
+    const recent = stats?.byCategory?.[cat]?.byType?.[sub]?.recent;
+    if (!recent || recent.length === 0) return 0;
+    let sum = 0;
+    for (const r of recent) sum += r.cost;
+    return sum > 0 ? sum / recent.length : 0;
   });
   const total = weights.reduce((s, w) => s + w, 0);
   if (total === 0) return null;
