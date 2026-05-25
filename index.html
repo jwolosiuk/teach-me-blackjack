@@ -334,6 +334,17 @@
       border-color: var(--good-border);
       color: var(--good);
     }
+
+    .version-stamp {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-top: 10px;
+      font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      opacity: 0.6;
+    }
   </style>
 </head>
 <body>
@@ -366,9 +377,11 @@
         <div class="feedback" id="feedback" hidden></div>
       </div>
       <div class="actions" id="actions"></div>
+      <div class="version-stamp">—</div>
     </footer>
   </main>
 
   <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/version.js"></script>
 </body>
 </html>

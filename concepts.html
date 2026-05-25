@@ -214,6 +214,14 @@
       border-top: 1px solid var(--border);
     }
     footer.small a { color: var(--muted); }
+    .version-stamp {
+      display: inline-block;
+      margin-top: 8px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
@@ -382,8 +390,10 @@
 
       <footer class="small">
         Rules variant of this app: 6 decks · Dealer stands on soft 17 · Double after split allowed · Late surrender allowed · Blackjack pays 3:2. House-edge figures are rounded approximations from standard simulations.
+        <br><span class="version-stamp">—</span>
       </footer>
     </article>
   </main>
+  <script type="module" src="js/version.js"></script>
 </body>
 </html>
