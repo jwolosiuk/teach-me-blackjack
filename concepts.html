@@ -325,9 +325,9 @@
 
       <h2>2. Improving step by step</h2>
 
-      <p>You don't need to memorize the whole chart at once. Each of the three levels below shaves a big chunk off the 5.5% baseline.</p>
+      <p>You don't need to memorize the whole chart at once. Each of the levels below shaves a chunk off the 5.5% baseline.</p>
 
-      <h3>a. Get the hard totals right</h3>
+      <h3>2A. Hard totals</h3>
 
       <p>One rule of thumb already eliminates most of the leak:</p>
       <div class="callout good">
@@ -347,12 +347,11 @@
       <p><strong>Soft hands</strong> (any hand with an Ace counted as 11) need their own short rule because the Ace makes you bust-proof on one more card:</p>
       <div class="callout good">
         <p><strong>Soft 19, 20</strong> → stand.<br>
-        <strong>Soft 18</strong> → stand vs dealer 2–8, hit vs 9, 10, A.<br>
+        <strong>Soft 18</strong> → stand vs dealer 2–8, hit vs 9, 10, A (see 2E).<br>
         <strong>Soft 17 and below</strong> → hit.</p>
       </div>
-      <p>The trap is <strong>soft 18 vs 9, 10, A</strong> and <strong>soft 17 vs everything</strong> — both look like comfortable totals, but the dealer's strong card beats them more than half the time and you can draw without busting. Hit them.</p>
 
-      <h3>b. Add doubling on strong totals</h3>
+      <h3>2B. Doubles</h3>
 
       <p>Doubling means: commit a second unit, take one card, stand. It's worth it when one extra card is very likely to land you on a strong hand against a weak dealer.</p>
 
@@ -369,23 +368,31 @@
         <span class="value">≈ 1%</span>
       </div>
 
-      <h3>c. Add splits and surrender</h3>
+      <h3>2C. Splits</h3>
 
-      <p>The last big EV comes from two cheap-to-remember rules.</p>
-
-      <p><strong>Splits — only three things to memorize:</strong></p>
+      <p>Only three things to memorize:</p>
       <ul>
         <li><strong>Always split A,A and 8,8</strong> — vs every upcard. Two aces are worth far more apart than as a soft 12; two 8s start at a miserable 16, splitting gives you two chances at a real hand.</li>
         <li><strong>Never split 5,5 or 10,10</strong> — a pair of fives is just a hard 10 (double-down material); a pair of tens is a 20 (already great, don't break it).</li>
         <li><strong>For the other pairs</strong>, split when the dealer is weak (roughly 2–6/7), hit otherwise. The chart fills in the details.</li>
       </ul>
 
-      <p><strong>Surrender — three cells, that's it:</strong></p>
+      <h3>2D. Surrenders</h3>
+
+      <p>Three cells, that's it — give up the hand for half your bet back instead of playing it out:</p>
       <ul>
         <li><strong>Hard 16</strong> vs dealer 9, 10, or A.</li>
         <li><strong>Hard 15</strong> vs dealer 10.</li>
       </ul>
       <p>You'll lose those hands roughly 60% of the time. Taking the half-unit refund beats playing them out.</p>
+
+      <h3>2E. Adjustments</h3>
+
+      <p>The narrow exceptions where both mimic <em>and</em> the bust-card rule are wrong. Under S17 there are essentially only three cells:</p>
+      <ul>
+        <li><strong>Soft 18 (A,7)</strong> vs dealer <strong>9, 10, or A</strong> — hit, don't stand. Both rules say "stand on 18+", but the dealer's strong card wins ≥ 60% of the time against your 18, and one more card can't bust you anyway.</li>
+      </ul>
+      <p>Tiny bucket, tiny EV — but if you've automated everything else, this is what's left.</p>
 
       <div class="edge-row good">
         <span class="label">Full basic strategy (= this app's chart)</span>
