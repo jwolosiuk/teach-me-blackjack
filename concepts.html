@@ -142,6 +142,47 @@
     .edge-row.warn   .value { color: var(--warn); }
     .edge-row.good   .value { color: var(--good); }
 
+    /* dealer bust chart */
+    .bust-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 14px 0 8px;
+    }
+    .bust-row {
+      display: grid;
+      grid-template-columns: 22px 1fr 42px;
+      align-items: center;
+      gap: 10px;
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+    }
+    .bust-row .upcard { font-weight: 600; text-align: right; }
+    .bust-row .bar {
+      background: var(--surface-2);
+      border-radius: 4px;
+      height: 14px;
+      overflow: hidden;
+    }
+    .bust-row .bar > span {
+      display: block;
+      height: 100%;
+      background: var(--muted);
+    }
+    .bust-row.weak   .bar > span { background: var(--good); }
+    .bust-row.strong .bar > span { background: var(--bad); }
+    .bust-row .value { color: var(--muted); }
+    .bust-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+    .chart-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 4px 0 18px;
+    }
+
     .hint {
       display: inline-flex;
       align-items: center;
@@ -223,6 +264,31 @@
       </div>
 
       <p>That fixed rule is the whole game's pivot. The dealer <em>must</em> draw on stiff hands (12–16) and so will bust often when their upcard is weak (2–6). They can't punish you when they're vulnerable. Your edge — the only edge a player ever gets — comes from making smarter choices than they're allowed to.</p>
+
+      <h3>Dealer bust rate by upcard</h3>
+
+      <p>Here's how often the dealer ends up busting, just from following that rule. The split between 6 and 7 is the most important number in blackjack:</p>
+
+      <div class="bust-chart" aria-label="Dealer bust probability by upcard">
+        <div class="bust-row weak">   <span class="upcard">2</span> <div class="bar"><span style="width:35.3%"></span></div> <span class="value">35.3%</span></div>
+        <div class="bust-row weak">   <span class="upcard">3</span> <div class="bar"><span style="width:37.6%"></span></div> <span class="value">37.6%</span></div>
+        <div class="bust-row weak">   <span class="upcard">4</span> <div class="bar"><span style="width:40.3%"></span></div> <span class="value">40.3%</span></div>
+        <div class="bust-row weak">   <span class="upcard">5</span> <div class="bar"><span style="width:42.9%"></span></div> <span class="value">42.9%</span></div>
+        <div class="bust-row weak">   <span class="upcard">6</span> <div class="bar"><span style="width:42.1%"></span></div> <span class="value">42.1%</span></div>
+        <div class="bust-divider"></div>
+        <div class="bust-row strong"> <span class="upcard">7</span> <div class="bar"><span style="width:26.0%"></span></div> <span class="value">26.0%</span></div>
+        <div class="bust-row strong"> <span class="upcard">8</span> <div class="bar"><span style="width:24.4%"></span></div> <span class="value">24.4%</span></div>
+        <div class="bust-row strong"> <span class="upcard">9</span> <div class="bar"><span style="width:22.8%"></span></div> <span class="value">22.8%</span></div>
+        <div class="bust-row strong"> <span class="upcard">10</span><div class="bar"><span style="width:21.4%"></span></div> <span class="value">21.4%</span></div>
+        <div class="bust-row strong"> <span class="upcard">A</span> <div class="bar"><span style="width:11.7%"></span></div> <span class="value">11.7%</span></div>
+      </div>
+      <p class="chart-caption">6 decks, S17, dealer plays from upcard + random hole. Bars scaled linearly (max ≈ 43%). Ace already excludes the cases where the dealer has natural blackjack.</p>
+
+      <p>Two things to read off this:</p>
+      <ul>
+        <li><strong>2–6 are "bust cards"</strong> — the dealer busts roughly 35–43% of the time. Stand on anything 12+ and let them break their own hand.</li>
+        <li><strong>7–A are "strong cards"</strong> — the dealer ends up at 17+ four times out of five. Sitting on a stiff 13 against a 10 just hands them the hand; you have to draw and risk busting yourself.</li>
+      </ul>
 
 
       <h2>1. The simplest strategy: mimic the dealer</h2>
