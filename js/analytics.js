@@ -182,9 +182,9 @@ function statsHtml(d, freq, rolling) {
     <span class="cat-stats">
       <span class="cat-stat cat-stat-meta"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
-      <span class="cat-stat"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev loss</span></span>
+      <span class="cat-stat" title="Lifetime ev loss per decision in this category"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev</span></span>
       <span class="cat-stat"><span class="num">${adjText(d, freq)}</span><span class="lbl">adj</span></span>
-      <span class="cat-stat"><span class="num">${rollingText(rolling)}</span><span class="lbl">rolling</span></span>
+      <span class="cat-stat" title="Avg ev loss over the last few decisions — drives the practice sampler"><span class="num">${rollingText(rolling)}</span><span class="lbl">now</span></span>
     </span>
   `;
 }
