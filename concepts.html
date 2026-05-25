@@ -412,6 +412,30 @@
     if ('caches' in window) {
       caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
     }
+
+    // Swipe right anywhere on the page goes back to the game (Practice / Play).
+    // Vertical scroll still belongs to the browser; we only act on clearly
+    // horizontal motion and not when the touch started on an interactive
+    // element (so links and the version stamp don't get hijacked).
+    (() => {
+      const IGNORE = 'button, a, summary, details, .mode-tabs';
+      let sx = 0, sy = 0, armed = false;
+      document.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1 || e.target.closest(IGNORE)) { armed = false; return; }
+        sx = e.touches[0].clientX;
+        sy = e.touches[0].clientY;
+        armed = true;
+      }, { passive: true });
+      document.addEventListener('touchend', e => {
+        if (!armed || e.changedTouches.length !== 1) return;
+        armed = false;
+        const dx = e.changedTouches[0].clientX - sx;
+        const dy = e.changedTouches[0].clientY - sy;
+        if (Math.abs(dx) < 60) return;
+        if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        if (dx > 0) window.location.href = 'index.html';
+      });
+    })();
   </script>
   <script type="module" src="js/version.js"></script>
 </body>

@@ -307,7 +307,12 @@ appEl.addEventListener('touchend', e => {
   const i = SWIPEABLE_MODES.indexOf(currentMode);
   if (i === -1) return;
   const next = i + (dx < 0 ? 1 : -1);
-  if (next >= 0 && next < SWIPEABLE_MODES.length) switchMode(SWIPEABLE_MODES[next]);
+  if (next >= 0 && next < SWIPEABLE_MODES.length) {
+    switchMode(SWIPEABLE_MODES[next]);
+  } else if (next === SWIPEABLE_MODES.length) {
+    // Swiping past the last in-page mode lands on the Learn page.
+    window.location.href = 'concepts.html';
+  }
 });
 
 switchMode(initialMode);
