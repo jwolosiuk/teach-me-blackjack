@@ -196,7 +196,14 @@ function expanded(key) {
   return expandedCats.has(key);
 }
 
-export function renderAnalytics(root, stats) {
+// sortBy:
+//   'adj' (default, used by play) — per-decision cost weighted by theoretical
+//          frequency, i.e. what's actually costing the player the most in a
+//          real game.
+//   'ev'  (used by practice)      — raw per-decision ev loss, so the bucket
+//          the player is worst at bubbles to the top regardless of how often
+//          it comes up. Better signal for what to drill on.
+export function renderAnalytics(root, stats, { sortBy = 'adj' } = {}) {
   const byCats = {};
   for (const c of RULE_CATEGORIES) byCats[c] = readCategory(stats, c);
   const all = overall(byCats);
@@ -206,16 +213,15 @@ export function renderAnalytics(root, stats) {
     return;
   }
 
-  // Sort by adj-ev-loss desc — that's "real-game cost per decision from this
-  // category given how often it actually comes up", so the worst leak bubbles
-  // to the top no matter how the user's practice happened to be sampled.
   const ordered = RULE_CATEGORIES.map(c => ({
     key: c,
     data: byCats[c],
-    adjLoss: byCats[c].total === 0
+    weight: byCats[c].total === 0
       ? -1
-      : (byCats[c].cost / byCats[c].total) * CATEGORY_FREQ[c].total,
-  })).sort((a, b) => b.adjLoss - a.adjLoss);
+      : sortBy === 'ev'
+        ? (byCats[c].cost / byCats[c].total)
+        : (byCats[c].cost / byCats[c].total) * CATEGORY_FREQ[c].total,
+  })).sort((a, b) => b.weight - a.weight);
 
   const overallHtml = `
     <div class="analytics-overall">
