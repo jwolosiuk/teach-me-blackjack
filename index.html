@@ -116,34 +116,29 @@
     .card {
       width: 72px;
       height: 100px;
-      border-radius: 10px;
+      border-radius: 12px;
       background: #fafafa;
       color: #1a1a1a;
-      padding: 6px 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
-      font-family: Georgia, "Times New Roman", serif;
-      font-weight: 700;
-      animation: dealIn 220ms cubic-bezier(0.3, 0.8, 0.2, 1) backwards;
-    }
-    .card.red { color: #d3203a; }
-    .card .corner {
-      font-size: 16px;
-      line-height: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1px;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      font-family: inherit;
+      animation: dealIn 220ms cubic-bezier(0.3, 0.8, 0.2, 1) backwards;
     }
-    .card .corner .suit { font-size: 14px; }
-    .card .corner.bot { align-self: flex-end; transform: rotate(180deg); }
-    .card .pip {
-      font-size: 32px;
+    .card.red { color: #d3203a; }
+    .card .rank {
+      font-size: 30px;
+      font-weight: 700;
       line-height: 1;
-      text-align: center;
-      align-self: center;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .card .suit {
+      font-size: 22px;
+      line-height: 1;
     }
 
     .card.back {

@@ -45,9 +45,8 @@ function renderCard(card) {
   const div = document.createElement('div');
   div.className = 'card' + (RED_SUITS.has(card.suit) ? ' red' : '');
   div.innerHTML = `
-    <div class="corner top">${card.rank}<span class="suit">${card.suit}</span></div>
-    <div class="pip">${card.suit}</div>
-    <div class="corner bot">${card.rank}<span class="suit">${card.suit}</span></div>
+    <div class="rank">${card.rank}</div>
+    <div class="suit">${card.suit}</div>
   `;
   return div;
 }
