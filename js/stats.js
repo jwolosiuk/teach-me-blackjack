@@ -1,6 +1,6 @@
 const WINDOW = 100;
 
-const CATEGORIES = ['basic', 'adjust', 'double', 'split', 'surrender'];
+const CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
 
 function emptyByCategory() {
   const out = {};
@@ -9,12 +9,18 @@ function emptyByCategory() {
 }
 
 // Older persisted stats may be missing newer fields; this brings them up to date.
+// If the byCategory schema has changed (e.g. mimic / hardTotals split out of
+// the old `basic` bucket), reset it — the buckets meant different things, so
+// preserving the old counts would mislabel them.
 export function migrateStats(stats) {
   if (!stats) return stats;
   if (!Array.isArray(stats.recent)) stats.recent = [];
-  if (!stats.byCategory) stats.byCategory = emptyByCategory();
-  else for (const c of CATEGORIES) {
-    if (!stats.byCategory[c]) stats.byCategory[c] = { total: 0, correct: 0, cost: 0 };
+  if (!stats.byCategory || !stats.byCategory.mimic) {
+    stats.byCategory = emptyByCategory();
+  } else {
+    for (const c of CATEGORIES) {
+      if (!stats.byCategory[c]) stats.byCategory[c] = { total: 0, correct: 0, cost: 0 };
+    }
   }
   return stats;
 }

@@ -7,13 +7,17 @@
 import { RULE_CATEGORIES } from './strategy.js';
 
 const CATEGORY_INFO = {
-  basic: {
-    label: 'Basic hit / stand',
-    desc: 'Stand on 12+ vs dealer 2–6; hit until 17 vs 7–A. Soft hands: stand 18+, hit otherwise.',
+  mimic: {
+    label: 'Mimic the dealer',
+    desc: 'Hit below 17, stand at 17+ — even the worst common strategy already gets these right.',
+  },
+  hardTotals: {
+    label: 'Hard totals',
+    desc: 'When you need the bust-card insight: stand on 12+ vs dealer 2–6 (mimic would hit and bust).',
   },
   adjust: {
     label: 'Adjustments',
-    desc: 'Exceptions to the basic rule (e.g. 12 vs 2–3 is hit, soft 18 vs 9 is hit, 11 vs A is hit).',
+    desc: 'Exceptions to the basic rules: 12 vs 2–3 is hit, soft 18 vs 9 is hit, 11 vs A is hit.',
   },
   double: {
     label: 'Doubles',

@@ -266,4 +266,9 @@ document.querySelectorAll('.mode-tab[data-mode]').forEach(tab => {
   tab.addEventListener('click', () => switchMode(tab.dataset.mode));
 });
 
+document.getElementById('scroll-to-stats')?.addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('analytics').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
 switchMode(initialMode);
