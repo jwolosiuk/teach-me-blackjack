@@ -8,7 +8,7 @@ import {
 import { buildDisplay, renderCard, renderBack } from './render.js';
 import { recordPlayOutcome, recordPlayDecision } from './stats.js';
 import { evaluateAction } from './evaluator.js';
-import { classifyDecision } from './strategy.js';
+import { classifyDecision, classifyHand } from './strategy.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true };
 
@@ -99,10 +99,12 @@ function handleAction(action) {
   game.lastDecision = legal.includes(decision.optimal) ? decision : null;
   if (game.lastDecision) {
     const category = classifyDecision(h.cards, game.dealer[0], game.lastDecision.optimal);
+    const type = classifyHand(h.cards).type;
     recordPlayDecision(stats, {
       correct: game.lastDecision.correct,
       cost: game.lastDecision.cost,
       category,
+      type,
     });
     onStatsChange?.(stats);
     if (!game.lastDecision.correct) {

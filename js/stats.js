@@ -1,10 +1,21 @@
 const WINDOW = 100;
 
 const CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
+const HAND_TYPES = ['hard', 'soft', 'pair'];
+
+function emptyTypeBucket() {
+  return { total: 0, correct: 0, cost: 0 };
+}
+
+function emptyCategoryEntry() {
+  const byType = {};
+  for (const t of HAND_TYPES) byType[t] = emptyTypeBucket();
+  return { total: 0, correct: 0, cost: 0, byType };
+}
 
 function emptyByCategory() {
   const out = {};
-  for (const c of CATEGORIES) out[c] = { total: 0, correct: 0, cost: 0 };
+  for (const c of CATEGORIES) out[c] = emptyCategoryEntry();
   return out;
 }
 
@@ -19,7 +30,11 @@ export function migrateStats(stats) {
     stats.byCategory = emptyByCategory();
   } else {
     for (const c of CATEGORIES) {
-      if (!stats.byCategory[c]) stats.byCategory[c] = { total: 0, correct: 0, cost: 0 };
+      if (!stats.byCategory[c]) stats.byCategory[c] = emptyCategoryEntry();
+      else if (!stats.byCategory[c].byType) {
+        stats.byCategory[c].byType = {};
+        for (const t of HAND_TYPES) stats.byCategory[c].byType[t] = emptyTypeBucket();
+      }
     }
   }
   return stats;
@@ -69,6 +84,12 @@ export function updateStats(stats, { result, type, category }) {
     bc.total++;
     if (result.correct) bc.correct++;
     bc.cost += result.cost;
+    if (type && bc.byType?.[type]) {
+      const bt = bc.byType[type];
+      bt.total++;
+      if (result.correct) bt.correct++;
+      bt.cost += result.cost;
+    }
   }
 }
 
@@ -116,7 +137,7 @@ export function recordPlayOutcome(stats, outcome, delta) {
   stats.netUnits += delta;
 }
 
-export function recordPlayDecision(stats, { correct, cost, category }) {
+export function recordPlayDecision(stats, { correct, cost, category, type }) {
   stats.recent.push({ correct, cost });
   if (stats.recent.length > WINDOW) stats.recent.shift();
   if (category && stats.byCategory?.[category]) {
@@ -124,6 +145,12 @@ export function recordPlayDecision(stats, { correct, cost, category }) {
     bc.total++;
     if (correct) bc.correct++;
     bc.cost += cost;
+    if (type && bc.byType?.[type]) {
+      const bt = bc.byType[type];
+      bt.total++;
+      if (correct) bt.correct++;
+      bt.cost += cost;
+    }
   }
 }
 

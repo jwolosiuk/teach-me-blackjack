@@ -460,6 +460,53 @@
       color: var(--muted);
       line-height: 1.45;
     }
+
+    /* expandable categories use <details>; hide the native marker */
+    details.cat-row > summary {
+      list-style: none;
+      cursor: pointer;
+    }
+    details.cat-row > summary::-webkit-details-marker { display: none; }
+    details.cat-row > summary::marker { content: ''; }
+
+    .chev {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform 200ms ease;
+    }
+    details[open] .chev { transform: rotate(90deg); }
+
+    /* hard/soft sub-tiles — same shape as parent, indented to read as a subset */
+    .cat-subs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 0 0 24px;
+    }
+    .cat-sub {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+    }
+    .cat-sub.good { border-left-color: var(--good); }
+    .cat-sub.warn { border-left-color: var(--warn); }
+    .cat-sub.bad  { border-left-color: var(--bad); }
+    .cat-sub.neutral { border-left-color: var(--border); }
+    .sub-name {
+      font-weight: 500;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    .cat-sub.good .cat-stat:nth-child(2) .num,
+    .cat-sub.good .cat-stat:nth-child(3) .num { color: var(--good); }
+    .cat-sub.warn .cat-stat:nth-child(2) .num,
+    .cat-sub.warn .cat-stat:nth-child(3) .num { color: var(--warn); }
+    .cat-sub.bad  .cat-stat:nth-child(2) .num,
+    .cat-sub.bad  .cat-stat:nth-child(3) .num { color: var(--bad); }
   </style>
 </head>
 <body>
