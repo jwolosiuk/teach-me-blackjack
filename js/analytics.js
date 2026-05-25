@@ -42,6 +42,21 @@ const CATEGORY_INFO = {
 
 const TYPE_LABEL = { hard: 'Hard', soft: 'Soft', pair: 'Pair' };
 
+// Decision frequencies under perfect basic-strategy play. Measured by a
+// 50,000-hand Monte Carlo (S17, DAS, late surrender) — re-generate with
+// `node tests/measure-frequencies.mjs`. These weight the adj-ev-loss
+// column so a mistake in a rare category (e.g. surrender) is scored by
+// how often it actually comes up in real games, not how often it shows
+// up in your practice / play log.
+const CATEGORY_FREQ = {
+  mimic:      { total: 0.64177, byType: { hard: 0.57263, soft: 0.06914 } },
+  hardTotals: { total: 0.13620, byType: { hard: 0.12646, soft: 0.00974 } },
+  adjust:     { total: 0.00627, byType: { hard: 0,       soft: 0.00627 } },
+  double:     { total: 0.07287, byType: { hard: 0.06170, soft: 0.01117 } },
+  split:      { total: 0.10795, byType: { pair: 0.10795 } },
+  surrender:  { total: 0.03494, byType: { hard: 0.03494 } },
+};
+
 // Persist expanded category state across re-renders (analytics re-renders
 // after every decision; without this the user's expansion would collapse).
 const expandedCats = new Set();
@@ -97,44 +112,55 @@ function escapeHtml(s) {
   return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-// `totalAll` is the denominator for the frequency-adjusted EV loss column:
-// cost / all_decisions, so a category that's rare but bleeds heavy can be
-// compared apples-to-apples with one that's common but cheap. Summing the
-// adj column across categories equals the overall ev loss.
-function statsHtml(d, totalAll) {
+// Per-decision EV loss inside the category (cost / observed total),
+// weighted by how often the category really comes up under optimal play:
+//   adj = (cost / observed_total) * theoretical_frequency
+// Sum across categories ≈ the player's overall ev loss expected in a real
+// game given their current per-category proficiency, regardless of how
+// the practice deal happened to bias their sample.
+function adjText(d, freq) {
+  if (d.total === 0) return '—';
+  const adj = (d.cost / d.total) * freq;
+  if (adj < 0.0005) return '0.000';
+  return adj.toFixed(3);
+}
+
+function statsHtml(d, freq) {
   return `
     <span class="cat-stats">
       <span class="cat-stat"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
       <span class="cat-stat"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev loss</span></span>
-      <span class="cat-stat"><span class="num">${evText(d.cost, totalAll)}</span><span class="lbl">adj</span></span>
+      <span class="cat-stat"><span class="num">${adjText(d, freq)}</span><span class="lbl">adj</span></span>
     </span>
   `;
 }
 
-function subRowsHtml(byType, types, totalAll) {
+function subRowsHtml(byType, types, freqByType) {
   return types.map(t => {
     const d = byType[t];
+    const freq = freqByType?.[t] ?? 0;
     return `
       <div class="cat-sub ${tone(d)}">
         <div class="cat-head">
           <span class="sub-name">${TYPE_LABEL[t]}</span>
-          ${statsHtml(d, totalAll)}
+          ${statsHtml(d, freq)}
         </div>
       </div>
     `;
   }).join('');
 }
 
-function categoryHtml(key, data, totalAll) {
+function categoryHtml(key, data) {
   const info = CATEGORY_INFO[key];
+  const freqEntry = CATEGORY_FREQ[key];
   const t = tone(data);
   const expandable = info.subTypes.length > 0;
   const isOpen = expanded(key);
   const headInner = `
     <div class="cat-head">
       <span class="cat-name">${escapeHtml(info.label)}${expandable ? '<span class="chev">▸</span>' : ''}</span>
-      ${statsHtml(data, totalAll)}
+      ${statsHtml(data, freqEntry.total)}
     </div>
     <div class="cat-desc">${escapeHtml(info.desc)}</div>
   `;
@@ -144,7 +170,7 @@ function categoryHtml(key, data, totalAll) {
   return `
     <details class="cat-row ${t}" data-cat="${key}" ${isOpen ? 'open' : ''}>
       <summary>${headInner}</summary>
-      <div class="cat-subs">${subRowsHtml(data.byType, info.subTypes, totalAll)}</div>
+      <div class="cat-subs">${subRowsHtml(data.byType, info.subTypes, freqEntry.byType)}</div>
     </details>
   `;
 }
@@ -163,12 +189,16 @@ export function renderAnalytics(root, stats) {
     return;
   }
 
-  // Worst category bubbles to the top so the user sees what to work on.
+  // Sort by adj-ev-loss desc — that's "real-game cost per decision from this
+  // category given how often it actually comes up", so the worst leak bubbles
+  // to the top no matter how the user's practice happened to be sampled.
   const ordered = RULE_CATEGORIES.map(c => ({
     key: c,
     data: byCats[c],
-    avgLoss: byCats[c].total === 0 ? -1 : byCats[c].cost / byCats[c].total,
-  })).sort((a, b) => b.avgLoss - a.avgLoss);
+    adjLoss: byCats[c].total === 0
+      ? -1
+      : (byCats[c].cost / byCats[c].total) * CATEGORY_FREQ[c].total,
+  })).sort((a, b) => b.adjLoss - a.adjLoss);
 
   const overallHtml = `
     <div class="analytics-overall">
@@ -178,7 +208,7 @@ export function renderAnalytics(root, stats) {
     </div>
   `;
 
-  const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data, all.total)).join('');
+  const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data)).join('');
 
   root.innerHTML = `
     <h2 class="analytics-title">By rule category</h2>
