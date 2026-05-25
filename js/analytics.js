@@ -125,11 +125,21 @@ function pctText(num, den) {
   return `${Math.round((num / den) * 100)}%`;
 }
 
+// Canonical ev-loss formatter — used by every "ev loss / adj / rolling"
+// number in analytics so the units stay consistent. Value is in bet units
+// (e.g. 0.024 means giving up 0.024 of one unit per decision); shown as a
+// percentage of the bet to save column width.
+export function fmtPctLoss(value) {
+  if (value === null || value === undefined) return '—';
+  const pct = value * 100;
+  if (pct < 0.05) return '0.0%';
+  if (pct < 10) return `${pct.toFixed(1)}%`;
+  return `${Math.round(pct)}%`;
+}
+
 function evText(cost, total) {
   if (total === 0) return '—';
-  const avg = cost / total;
-  if (avg < 0.0005) return '0.000';
-  return avg.toFixed(3);
+  return fmtPctLoss(cost / total);
 }
 
 function freqText(freq) {
@@ -160,15 +170,11 @@ function escapeHtml(s) {
 // the practice deal happened to bias their sample.
 function adjText(d, freq) {
   if (d.total === 0) return '—';
-  const adj = (d.cost / d.total) * freq;
-  if (adj < 0.0005) return '0.000';
-  return adj.toFixed(3);
+  return fmtPctLoss((d.cost / d.total) * freq);
 }
 
 function rollingText(rolling) {
-  if (rolling === null || rolling === undefined) return '—';
-  if (rolling < 0.0005) return '0.000';
-  return rolling.toFixed(3);
+  return fmtPctLoss(rolling);
 }
 
 function statsHtml(d, freq, rolling) {

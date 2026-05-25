@@ -3,7 +3,7 @@ import { legalActions, evaluateAction } from './evaluator.js';
 import { classifyHand, strategyDependsOnUpcard, classifyDecision } from './strategy.js';
 import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats, migrateStats } from './stats.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
-import { renderAnalytics } from './analytics.js';
+import { renderAnalytics, fmtPctLoss } from './analytics.js';
 import * as play from './play.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true, numDecks: 6 };
@@ -222,11 +222,10 @@ function showFeedback(result) {
   }
 }
 
-// Cost is in bet units. Always negative (you lost EV vs optimal).
-// Below 0.01 bet, show "<0.01" so a near-tie doesn't read as "0.00".
+// Cost is in bet units. Always non-negative (you lost EV vs optimal).
+// Display as a negative percentage of one bet — matches the analytics columns.
 function formatEvCost(cost) {
-  if (cost < 0.005) return '−<0.01 EV';
-  return `−${cost.toFixed(2)} EV`;
+  return `−${fmtPctLoss(cost)}`;
 }
 
 function hideFeedback() {
@@ -237,7 +236,7 @@ function renderPracticeStats() {
   const acc = accuracy(practiceStats);
   const evl = avgEvLoss(practiceStats);
   $('stat-1').textContent = acc === null ? '—' : `${Math.round(acc * 100)}%`;
-  $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
+  $('stat-2').textContent = fmtPctLoss(evl);
   $('stat-3').textContent = String(practiceStats.total);
   renderAnalytics($('analytics'), practiceStats, { sortBy: 'rolling' });
   persist();
@@ -293,7 +292,7 @@ function renderPlayStats() {
   const sign = net > 0 ? '+' : '';
   $('stat-1').textContent = net === 0 ? '0' : `${sign}${Number.isInteger(net) ? net : net.toFixed(1)}`;
   const evl = avgEvLoss(playStats);
-  $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
+  $('stat-2').textContent = fmtPctLoss(evl);
   $('stat-3').textContent = String(playStats.hands);
   renderAnalytics($('analytics'), playStats);
   persist();

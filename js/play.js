@@ -9,6 +9,7 @@ import { buildDisplay, renderCard, renderBack } from './render.js';
 import { recordPlayOutcome, recordPlayDecision } from './stats.js';
 import { evaluateAction } from './evaluator.js';
 import { classifyDecision, classifyHand } from './strategy.js';
+import { fmtPctLoss } from './analytics.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true };
 
@@ -412,8 +413,7 @@ function renderResult() {
 }
 
 function formatEvCost(cost) {
-  if (cost < 0.005) return '−<0.01 EV';
-  return `−${cost.toFixed(2)} EV`;
+  return `−${fmtPctLoss(cost)}`;
 }
 
 function formatDelta(d) {
