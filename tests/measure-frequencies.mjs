@@ -9,16 +9,18 @@
 
 import { createShoe, reshuffleIfLow, drawCard, handTotal, isBust, isBlackjack, dealerPlay } from '../js/game.js';
 import { solveActions } from '../js/solver.js';
-import { classifyDecision, classifyHand } from '../js/strategy.js';
+import { classifyDecision } from '../js/strategy.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true };
 const CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
-const HAND_TYPES = ['hard', 'soft', 'pair'];
+const SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];
 
 function emptyCounts() {
   const out = { total: 0, byCategory: {} };
   for (const c of CATEGORIES) {
-    out.byCategory[c] = { total: 0, byType: { hard: 0, soft: 0, pair: 0 } };
+    const byType = {};
+    for (const t of SUB_TYPES) byType[t] = 0;
+    out.byCategory[c] = { total: 0, byType };
   }
   return out;
 }
@@ -45,11 +47,10 @@ function legalActionsFor(hand, isFirstDecisionOnFirstHand, fromSplitAce) {
 }
 
 function recordDecision(counts, hand, upcard, action) {
-  const cat = classifyDecision(hand, upcard, action);
-  const type = classifyHand(hand).type;
+  const { category, subType } = classifyDecision(hand, upcard, action);
   counts.total++;
-  counts.byCategory[cat].total++;
-  counts.byCategory[cat].byType[type]++;
+  counts.byCategory[category].total++;
+  counts.byCategory[category].byType[subType]++;
 }
 
 // Plays one player hand from the awaiting state; returns when the hand is
@@ -147,7 +148,7 @@ console.log('Frequencies as fraction of all decisions:\n');
 for (const c of CATEGORIES) {
   const bc = counts.byCategory[c];
   const fTotal = formatFreq(bc.total, counts.total);
-  const parts = HAND_TYPES
+  const parts = SUB_TYPES
     .filter(t => bc.byType[t] > 0)
     .map(t => `${t}=${formatFreq(bc.byType[t], counts.total)}`)
     .join('  ');
@@ -159,7 +160,7 @@ console.log('const CATEGORY_FREQ = {');
 for (const c of CATEGORIES) {
   const bc = counts.byCategory[c];
   const total = bc.total / counts.total;
-  const subTypes = HAND_TYPES.reduce((acc, t) => {
+  const subTypes = SUB_TYPES.reduce((acc, t) => {
     if (bc.byType[t] > 0) acc[t] = +(bc.byType[t] / counts.total).toFixed(5);
     return acc;
   }, {});

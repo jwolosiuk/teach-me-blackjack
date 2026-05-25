@@ -165,13 +165,12 @@ function handleAction(action) {
   const decision = evaluateAction({ hand: h.cards, upcard: game.dealer[0], action, rules: RULES });
   game.lastDecision = legal.includes(decision.optimal) ? decision : null;
   if (game.lastDecision) {
-    const category = classifyDecision(h.cards, game.dealer[0], game.lastDecision.optimal);
-    const type = classifyHand(h.cards).type;
+    const { category, subType } = classifyDecision(h.cards, game.dealer[0], game.lastDecision.optimal);
     recordPlayDecision(stats, {
       correct: game.lastDecision.correct,
       cost: game.lastDecision.cost,
       category,
-      type,
+      subType,
     });
     onStatsChange?.(stats);
     if (!game.lastDecision.correct) {

@@ -78,22 +78,6 @@
     body:not([data-mode="learn"]) .learn-view { display: none; }
     body[data-mode="learn"] .learn-view { display: block; }
 
-    /* Scroll-snap in game modes only. Has to live on <html> because that's
-       the actual scrolling element on mobile Safari (snap-type on <body>
-       is silently ignored when the html element is the scroll container).
-       JS toggles html.snap-mode based on the current tab.
-       proximity (not mandatory) means snap only kicks in when the user
-       lets go near a snap point — mid-scroll feels normal. snap-stop:
-       always is removed so a long flick can carry past one snap point
-       in a single fluid motion. Learn keeps natural scrolling so the
-       article is readable top-down. */
-    html.snap-mode {
-      scroll-snap-type: y proximity;
-    }
-    html.snap-mode .app,
-    html.snap-mode .analytics {
-      scroll-snap-align: start;
-    }
 
     /* ---------- mode tabs ---------- */
     .mode-tabs {
@@ -743,8 +727,6 @@
           if (m === 'play' || m === 'learn') mode = m;
         } catch {}
         document.body.dataset.mode = mode;
-        // Scroll-snap belongs on <html> (the actual scroll element); JS owns it.
-        document.documentElement.classList.toggle('snap-mode', mode !== 'learn');
         document.querySelector(`.mode-tab[data-mode="${mode}"]`)?.classList.add('active');
         const labels = mode === 'play'
           ? ['net', 'ev loss', 'hands']

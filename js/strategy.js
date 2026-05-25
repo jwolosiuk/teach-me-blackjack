@@ -81,9 +81,13 @@ export function strategyDependsOnUpcard(playerHand, rules = {}) {
 }
 
 // Mutually exclusive rule categories — what kind of decision is this?
-// Used by the analytics page to surface which rule the player is weakest at.
-// Mirrors the progression on the Learn page (mimic → hard totals → doubles →
-// splits → surrender).
+// Returns { category, subType }; subType is the within-category breakdown:
+//   hard / soft for mimic / hardTotals / adjust / double
+//   hard       for surrender (no soft surrenders in the chart)
+//   always     for splits whose entire row is one action (A,A and 8,8 always P,
+//              10,10 always S)
+//   mixed      for splits whose action depends on the dealer upcard
+// Category meanings:
 //   'split'      — hand is a pair (every pair situation, even when optimal is H/S)
 //   'surrender'  — non-pair, optimal is R
 //   'double'     — non-pair, non-R, optimal is D
@@ -93,17 +97,27 @@ export function strategyDependsOnUpcard(playerHand, rules = {}) {
 //                    matches optimal (hard: stand 12+ vs 2–6; soft: stand 18+)
 //   'adjust'     — neither mimic nor the bust-card rule matches optimal
 //                    (the exceptions: 12 vs 2–3, soft 18 vs 9, 11 vs A, …)
+function pairSubType(hand) {
+  const rank = hand[0] === 11 ? 'A' : String(hand[0]);
+  const row = pairs[rank];
+  return row.every(c => c === row[0]) ? 'always' : 'mixed';
+}
+
 export function classifyDecision(hand, upcard, optimal) {
-  if (isPair(hand)) return 'split';
-  if (optimal === 'R') return 'surrender';
-  if (optimal === 'D') return 'double';
+  if (isPair(hand)) {
+    return { category: 'split', subType: pairSubType(hand) };
+  }
   const { type, total } = classifyHand(hand);
+  const handSub = type === 'soft' ? 'soft' : 'hard';
+  if (optimal === 'R') return { category: 'surrender', subType: handSub };
+  if (optimal === 'D') return { category: 'double', subType: handSub };
   const mimic = total >= 17 ? 'S' : 'H';
-  if (mimic === optimal) return 'mimic';
+  if (mimic === optimal) return { category: 'mimic', subType: handSub };
   const hardRule = type === 'soft'
     ? (total >= 18 ? 'S' : 'H')
     : (total >= 17 ? 'S' : total <= 11 ? 'H' : (upcard <= 6 ? 'S' : 'H'));
-  return hardRule === optimal ? 'hardTotals' : 'adjust';
+  return { category: hardRule === optimal ? 'hardTotals' : 'adjust', subType: handSub };
 }
 
 export const RULE_CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
+export const SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];

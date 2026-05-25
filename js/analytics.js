@@ -31,7 +31,7 @@ const CATEGORY_INFO = {
   split: {
     label: '2C. Splits',
     desc: 'Any pair situation — when to split and when not to. Always split A,A and 8,8; never split 5,5 or 10,10; the rest depends on the upcard.',
-    subTypes: [],
+    subTypes: ['always', 'mixed'],
   },
   surrender: {
     label: '2D. Surrenders',
@@ -40,7 +40,13 @@ const CATEGORY_INFO = {
   },
 };
 
-const TYPE_LABEL = { hard: 'Hard', soft: 'Soft', pair: 'Pair' };
+const TYPE_LABEL = {
+  hard: 'Hard',
+  soft: 'Soft',
+  pair: 'Pair',
+  always: 'Always',     // one strategy: A,A & 8,8 always P; 10,10 always S
+  mixed: 'Mixed',       // strategy depends on the dealer upcard
+};
 
 // Decision frequencies under perfect basic-strategy play. Measured by a
 // 50,000-hand Monte Carlo (S17, DAS, late surrender) — re-generate with
@@ -49,31 +55,32 @@ const TYPE_LABEL = { hard: 'Hard', soft: 'Soft', pair: 'Pair' };
 // how often it actually comes up in real games, not how often it shows
 // up in your practice / play log.
 const CATEGORY_FREQ = {
-  mimic:      { total: 0.64177, byType: { hard: 0.57263, soft: 0.06914 } },
-  hardTotals: { total: 0.13620, byType: { hard: 0.12646, soft: 0.00974 } },
-  adjust:     { total: 0.00627, byType: { hard: 0,       soft: 0.00627 } },
-  double:     { total: 0.07287, byType: { hard: 0.06170, soft: 0.01117 } },
-  split:      { total: 0.10795, byType: { pair: 0.10795 } },
-  surrender:  { total: 0.03494, byType: { hard: 0.03494 } },
+  mimic:      { total: 0.63755, byType: { hard: 0.56886, soft: 0.06869 } },
+  hardTotals: { total: 0.13793, byType: { hard: 0.12822, soft: 0.00971 } },
+  adjust:     { total: 0.00637, byType: { hard: 0,       soft: 0.00637 } },
+  double:     { total: 0.07394, byType: { hard: 0.06203, soft: 0.01192 } },
+  split:      { total: 0.10963, byType: { always: 0.07804, mixed: 0.03158 } },
+  surrender:  { total: 0.03459, byType: { hard: 0.03459 } },
 };
 
 // Persist expanded category state across re-renders (analytics re-renders
 // after every decision; without this the user's expansion would collapse).
 const expandedCats = new Set();
 
+const ALL_SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];
+
 function readCategory(stats, key) {
   const src = stats?.byCategory?.[key];
   const empty = { total: 0, correct: 0, cost: 0 };
-  if (!src) return { ...empty, byType: { hard: { ...empty }, soft: { ...empty }, pair: { ...empty } } };
+  const byType = {};
+  for (const t of ALL_SUB_TYPES) {
+    byType[t] = { ...empty, ...(src?.byType?.[t] ?? {}) };
+  }
   return {
-    total: src.total ?? 0,
-    correct: src.correct ?? 0,
-    cost: src.cost ?? 0,
-    byType: {
-      hard: { ...empty, ...(src.byType?.hard ?? {}) },
-      soft: { ...empty, ...(src.byType?.soft ?? {}) },
-      pair: { ...empty, ...(src.byType?.pair ?? {}) },
-    },
+    total: src?.total ?? 0,
+    correct: src?.correct ?? 0,
+    cost: src?.cost ?? 0,
+    byType,
   };
 }
 

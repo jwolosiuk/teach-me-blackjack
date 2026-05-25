@@ -15,8 +15,8 @@ function classify(situation) {
 function tally(stats, n) {
   const counts = { mimic: 0, hardTotals: 0, adjust: 0, double: 0, split: 0, surrender: 0 };
   for (let i = 0; i < n; i++) {
-    const cat = classify(dealSituation(stats));
-    counts[cat]++;
+    const { category } = classify(dealSituation(stats));
+    counts[category]++;
   }
   return counts;
 }
@@ -35,15 +35,22 @@ for (const [k, v] of Object.entries(baseline)) {
 // 2. Surrender is the only leaky bucket. With weighting we expect to see
 //    surrender pulled way above its baseline share even though it's a rare
 //    cell in the chart.
+function bucket(total, correct, cost) { return { total, correct, cost }; }
+function entry(total, correct, cost, byType) {
+  const types = { hard: bucket(0,0,0), soft: bucket(0,0,0), pair: bucket(0,0,0), always: bucket(0,0,0), mixed: bucket(0,0,0) };
+  Object.assign(types, byType);
+  return { total, correct, cost, byType: types };
+}
+
 console.log('\nOnly surrender leaks (0.20 ev loss / decision):');
 const leakSurrender = {
   byCategory: {
-    mimic:      { total: 100, correct: 100, cost: 0, byType: { hard: { total: 80, correct: 80, cost: 0 }, soft: { total: 20, correct: 20, cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    hardTotals: { total: 50,  correct: 50,  cost: 0, byType: { hard: { total: 45, correct: 45, cost: 0 }, soft: { total: 5,  correct: 5,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    adjust:     { total: 0,   correct: 0,   cost: 0, byType: { hard: { total: 0,  correct: 0,  cost: 0 }, soft: { total: 0,  correct: 0,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    double:     { total: 20,  correct: 20,  cost: 0, byType: { hard: { total: 16, correct: 16, cost: 0 }, soft: { total: 4,  correct: 4,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    split:      { total: 30,  correct: 30,  cost: 0, byType: { hard: { total: 0,  correct: 0,  cost: 0 }, soft: { total: 0,  correct: 0,  cost: 0 }, pair: { total: 30, correct: 30, cost: 0 } } },
-    surrender:  { total: 10,  correct: 4,   cost: 2.0, byType: { hard: { total: 10, correct: 4, cost: 2.0 }, soft: { total: 0, correct: 0, cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
+    mimic:      entry(100, 100, 0,   { hard: bucket(80, 80, 0), soft: bucket(20, 20, 0) }),
+    hardTotals: entry(50,  50,  0,   { hard: bucket(45, 45, 0), soft: bucket(5,  5,  0) }),
+    adjust:     entry(0,   0,   0,   {}),
+    double:     entry(20,  20,  0,   { hard: bucket(16, 16, 0), soft: bucket(4,  4,  0) }),
+    split:      entry(30,  30,  0,   { always: bucket(20, 20, 0), mixed: bucket(10, 10, 0) }),
+    surrender:  entry(10,  4,   2.0, { hard: bucket(10, 4, 2.0) }),
   },
 };
 const skewed = tally(leakSurrender, N);
@@ -56,12 +63,12 @@ console.log('\nExpect surrender ~90% (only nonzero-weight bucket) + ~3.5% from 1
 console.log('\nMimic leaks 0.02/decision, double leaks 0.04/decision (everything else perfect):');
 const twoLeaks = {
   byCategory: {
-    mimic:      { total: 100, correct: 98, cost: 2.0, byType: { hard: { total: 90, correct: 88, cost: 2.0 }, soft: { total: 10, correct: 10, cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    hardTotals: { total: 50,  correct: 50, cost: 0,   byType: { hard: { total: 45, correct: 45, cost: 0 }, soft: { total: 5,  correct: 5,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    adjust:     { total: 0,   correct: 0,  cost: 0,   byType: { hard: { total: 0,  correct: 0,  cost: 0 }, soft: { total: 0,  correct: 0,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    double:     { total: 25,  correct: 24, cost: 1.0, byType: { hard: { total: 20, correct: 19, cost: 1.0 }, soft: { total: 5,  correct: 5,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
-    split:      { total: 30,  correct: 30, cost: 0,   byType: { hard: { total: 0,  correct: 0,  cost: 0 }, soft: { total: 0,  correct: 0,  cost: 0 }, pair: { total: 30, correct: 30, cost: 0 } } },
-    surrender:  { total: 10,  correct: 10, cost: 0,   byType: { hard: { total: 10, correct: 10, cost: 0 }, soft: { total: 0,  correct: 0,  cost: 0 }, pair: { total: 0, correct: 0, cost: 0 } } },
+    mimic:      entry(100, 98, 2.0, { hard: bucket(90, 88, 2.0), soft: bucket(10, 10, 0) }),
+    hardTotals: entry(50,  50, 0,   { hard: bucket(45, 45, 0),   soft: bucket(5,  5,  0) }),
+    adjust:     entry(0,   0,  0,   {}),
+    double:     entry(25,  24, 1.0, { hard: bucket(20, 19, 1.0), soft: bucket(5,  5,  0) }),
+    split:      entry(30,  30, 0,   { always: bucket(20, 20, 0), mixed: bucket(10, 10, 0) }),
+    surrender:  entry(10,  10, 0,   { hard: bucket(10, 10, 0) }),
   },
 };
 const twoLeaksRes = tally(twoLeaks, N);

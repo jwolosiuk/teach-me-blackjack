@@ -1,7 +1,10 @@
 const WINDOW = 100;
 
 const CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
-const HAND_TYPES = ['hard', 'soft', 'pair'];
+// Every possible byCategory sub-bucket key. Most categories only populate two
+// of these; split uses always/mixed, surrender uses hard. Keeping the set flat
+// makes the schema uniform and easy to migrate.
+const SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];
 
 function emptyTypeBucket() {
   return { total: 0, correct: 0, cost: 0 };
@@ -9,7 +12,7 @@ function emptyTypeBucket() {
 
 function emptyCategoryEntry() {
   const byType = {};
-  for (const t of HAND_TYPES) byType[t] = emptyTypeBucket();
+  for (const t of SUB_TYPES) byType[t] = emptyTypeBucket();
   return { total: 0, correct: 0, cost: 0, byType };
 }
 
@@ -20,20 +23,25 @@ function emptyByCategory() {
 }
 
 // Older persisted stats may be missing newer fields; this brings them up to date.
-// If the byCategory schema has changed (e.g. mimic / hardTotals split out of
-// the old `basic` bucket), reset it — the buckets meant different things, so
-// preserving the old counts would mislabel them.
+// If the byCategory schema has changed (mimic split out, or split sub-buckets
+// went from `pair` to `always`/`mixed`), reset it — preserving stale counts
+// against the new bucket meanings would mislabel them.
 export function migrateStats(stats) {
   if (!stats) return stats;
   if (!Array.isArray(stats.recent)) stats.recent = [];
-  if (!stats.byCategory || !stats.byCategory.mimic) {
+  const stale = !stats.byCategory
+    || !stats.byCategory.mimic
+    || !stats.byCategory.split?.byType?.always;
+  if (stale) {
     stats.byCategory = emptyByCategory();
   } else {
     for (const c of CATEGORIES) {
       if (!stats.byCategory[c]) stats.byCategory[c] = emptyCategoryEntry();
-      else if (!stats.byCategory[c].byType) {
-        stats.byCategory[c].byType = {};
-        for (const t of HAND_TYPES) stats.byCategory[c].byType[t] = emptyTypeBucket();
+      else {
+        if (!stats.byCategory[c].byType) stats.byCategory[c].byType = {};
+        for (const t of SUB_TYPES) {
+          if (!stats.byCategory[c].byType[t]) stats.byCategory[c].byType[t] = emptyTypeBucket();
+        }
       }
     }
   }
@@ -64,7 +72,7 @@ export function createStats() {
   };
 }
 
-export function updateStats(stats, { result, type, category }) {
+export function updateStats(stats, { result, type, category, subType }) {
   stats.total++;
   stats.byType[type].total++;
   if (result.correct) {
@@ -84,8 +92,8 @@ export function updateStats(stats, { result, type, category }) {
     bc.total++;
     if (result.correct) bc.correct++;
     bc.cost += result.cost;
-    if (type && bc.byType?.[type]) {
-      const bt = bc.byType[type];
+    if (subType && bc.byType?.[subType]) {
+      const bt = bc.byType[subType];
       bt.total++;
       if (result.correct) bt.correct++;
       bt.cost += result.cost;
@@ -137,7 +145,7 @@ export function recordPlayOutcome(stats, outcome, delta) {
   stats.netUnits += delta;
 }
 
-export function recordPlayDecision(stats, { correct, cost, category, type }) {
+export function recordPlayDecision(stats, { correct, cost, category, subType }) {
   stats.recent.push({ correct, cost });
   if (stats.recent.length > WINDOW) stats.recent.shift();
   if (category && stats.byCategory?.[category]) {
@@ -145,8 +153,8 @@ export function recordPlayDecision(stats, { correct, cost, category, type }) {
     bc.total++;
     if (correct) bc.correct++;
     bc.cost += cost;
-    if (type && bc.byType?.[type]) {
-      const bt = bc.byType[type];
+    if (subType && bc.byType?.[subType]) {
+      const bt = bc.byType[subType];
       bt.total++;
       if (correct) bt.correct++;
       bt.cost += cost;

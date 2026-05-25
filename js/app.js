@@ -97,7 +97,6 @@ function switchMode(name) {
   }
   currentMode = name;
   document.body.dataset.mode = name;
-  document.documentElement.classList.toggle('snap-mode', name !== 'learn');
   for (const tab of document.querySelectorAll('.mode-tab')) {
     tab.classList.toggle('active', tab.dataset.mode === name);
   }
@@ -197,8 +196,8 @@ function handleDecision(action, e) {
   e.stopPropagation();
   pState = 'feedback';
   currentResult = evaluateAction({ hand: current.hand, upcard: current.upcard, action, rules: RULES });
-  const category = classifyDecision(current.hand, current.upcard, currentResult.optimal);
-  updateStats(practiceStats, { result: currentResult, type: current.type, category });
+  const { category, subType } = classifyDecision(current.hand, current.upcard, currentResult.optimal);
+  updateStats(practiceStats, { result: currentResult, type: current.type, category, subType });
   showFeedback(currentResult);
   renderPracticeStats();
   setTimeout(() => { pFeedbackReady = true; }, 120);

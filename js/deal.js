@@ -49,15 +49,18 @@ function shuffle(arr) {
   return copy;
 }
 
-// One entry per chart cell, tagged with its (category, hand-type) bucket.
-// The category is computed from a representative hand for classification —
-// every actual deal still rolls fresh cards via the hand builders below.
+// One entry per chart cell, tagged with its (category, subType) bucket.
+// Bucket keys are 'category-subType' (e.g. 'split-always', 'mimic-hard').
 const CELLS = [];
-const BUCKETS = {};      // { 'cat-type': cell[] }
+const BUCKETS = {};
+
+function classifyForBucket(hand, up) {
+  return classifyDecision(hand, up, getOptimalAction(hand, up));
+}
 
 function indexCell(cell) {
   CELLS.push(cell);
-  const key = `${cell.cat}-${cell.type}`;
+  const key = `${cell.cat}-${cell.subType}`;
   (BUCKETS[key] ||= []).push(cell);
 }
 
@@ -71,20 +74,20 @@ for (const total of HARD_KEYS) {
         }
         return [Math.floor(total / 2), Math.ceil(total / 2)];
       })();
-    const cat = classifyDecision(repHand, up, getOptimalAction(repHand, up));
-    indexCell({ kind: 'hard', total, upcard: up, type: 'hard', cat });
+    const { category, subType } = classifyForBucket(repHand, up);
+    indexCell({ kind: 'hard', total, upcard: up, cat: category, subType });
   }
 }
 for (const total of SOFT_KEYS) {
   for (const up of DEALER_UPCARDS) {
-    const repHand = softHand(total);
-    const cat = classifyDecision(repHand, up, getOptimalAction(repHand, up));
-    indexCell({ kind: 'soft', total, upcard: up, type: 'soft', cat });
+    const { category, subType } = classifyForBucket(softHand(total), up);
+    indexCell({ kind: 'soft', total, upcard: up, cat: category, subType });
   }
 }
 for (const rank of PAIR_KEYS) {
   for (const up of DEALER_UPCARDS) {
-    indexCell({ kind: 'pair', rank, upcard: up, type: 'pair', cat: 'split' });
+    const { category, subType } = classifyForBucket(pairHand(rank), up);
+    indexCell({ kind: 'pair', rank, upcard: up, cat: category, subType });
   }
 }
 
@@ -93,7 +96,9 @@ function cellToSituation(cell) {
   if (cell.kind === 'hard') hand = hardHand(cell.total);
   else if (cell.kind === 'soft') hand = softHand(cell.total);
   else hand = pairHand(cell.rank);
-  return { hand: shuffle(hand), upcard: cell.upcard, type: cell.type };
+  // `type` here is the hand type (hard/soft/pair) — used by app.js for the
+  // top-level stats.byType bucket. Distinct from the category subType.
+  return { hand: shuffle(hand), upcard: cell.upcard, type: cell.kind };
 }
 
 // Pick a (cat, type) bucket key proportional to the player's cost / total
