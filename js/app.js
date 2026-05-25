@@ -250,7 +250,7 @@ function renderPlayStats() {
 
 // ---------- bootstrap ----------
 
-document.querySelectorAll('.mode-tab').forEach(tab => {
+document.querySelectorAll('.mode-tab[data-mode]').forEach(tab => {
   tab.addEventListener('click', () => switchMode(tab.dataset.mode));
 });
 
