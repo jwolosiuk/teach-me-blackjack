@@ -135,13 +135,16 @@ function adjText(d, freq) {
 function statsHtml(d, freq) {
   return `
     <span class="cat-stats">
-      <span class="cat-stat cat-stat-meta"><span class="num">${freqText(freq)}</span><span class="lbl">freq</span></span>
       <span class="cat-stat cat-stat-meta"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
       <span class="cat-stat"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev loss</span></span>
       <span class="cat-stat"><span class="num">${adjText(d, freq)}</span><span class="lbl">adj</span></span>
     </span>
   `;
+}
+
+function freqBadge(freq) {
+  return `<span class="cat-freq" title="Theoretical frequency under optimal play">${freqText(freq)}</span>`;
 }
 
 function subRowsHtml(byType, types, freqByType) {
@@ -151,7 +154,10 @@ function subRowsHtml(byType, types, freqByType) {
     return `
       <div class="cat-sub ${tone(d)}">
         <div class="cat-head">
-          <span class="sub-name">${TYPE_LABEL[t]}</span>
+          <span class="cat-name-group">
+            <span class="sub-name">${TYPE_LABEL[t]}</span>
+            ${freqBadge(freq)}
+          </span>
           ${statsHtml(d, freq)}
         </div>
       </div>
@@ -167,7 +173,10 @@ function categoryHtml(key, data) {
   const isOpen = expanded(key);
   const headInner = `
     <div class="cat-head">
-      <span class="cat-name">${escapeHtml(info.label)}${expandable ? '<span class="chev">▸</span>' : ''}</span>
+      <span class="cat-name-group">
+        <span class="cat-name">${escapeHtml(info.label)}${expandable ? '<span class="chev">▸</span>' : ''}</span>
+        ${freqBadge(freqEntry.total)}
+      </span>
       ${statsHtml(data, freqEntry.total)}
     </div>
     <div class="cat-desc">${escapeHtml(info.desc)}</div>
