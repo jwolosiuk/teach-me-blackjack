@@ -1,8 +1,20 @@
+// Practice-mode situation dealer.
+//
+// Vanilla mode (no stats) is uniform across the chart so every cell gets
+// equal practice. When stats are passed in, 90% of deals are drawn from
+// (category, hand-type) buckets weighted by the player's observed EV loss
+// per decision in that bucket (cost / total). The remaining 10% is pure
+// uniform exploration so the user keeps practicing what they're already
+// good at and discovers improvement / regression.
+
 import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './strategy-table.js';
+import { classifyDecision, getOptimalAction } from './strategy.js';
 
 const HARD_KEYS = Object.keys(hardTotals).map(Number);
 const SOFT_KEYS = Object.keys(softTotals).map(Number);
 const PAIR_KEYS = Object.keys(pairs);
+
+const EXPLORATION_RATE = 0.10;
 
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -37,23 +49,80 @@ function shuffle(arr) {
   return copy;
 }
 
-// Uniform across the three chart buckets so every cell gets practice.
-export function dealSituation() {
-  const bucket = Math.floor(Math.random() * 3);
-  let hand, type;
-  if (bucket === 0) {
-    hand = hardHand(randomItem(HARD_KEYS));
-    type = 'hard';
-  } else if (bucket === 1) {
-    hand = softHand(randomItem(SOFT_KEYS));
-    type = 'soft';
-  } else {
-    hand = pairHand(randomItem(PAIR_KEYS));
-    type = 'pair';
+// One entry per chart cell, tagged with its (category, hand-type) bucket.
+// The category is computed from a representative hand for classification —
+// every actual deal still rolls fresh cards via the hand builders below.
+const CELLS = [];
+const BUCKETS = {};      // { 'cat-type': cell[] }
+
+function indexCell(cell) {
+  CELLS.push(cell);
+  const key = `${cell.cat}-${cell.type}`;
+  (BUCKETS[key] ||= []).push(cell);
+}
+
+for (const total of HARD_KEYS) {
+  for (const up of DEALER_UPCARDS) {
+    const repHand = total === 20 ? [2, 8, 10]
+      : (() => {
+        for (let lo = 2; lo < total - lo; lo++) {
+          const hi = total - lo;
+          if (hi <= 10 && lo !== hi) return [lo, hi];
+        }
+        return [Math.floor(total / 2), Math.ceil(total / 2)];
+      })();
+    const cat = classifyDecision(repHand, up, getOptimalAction(repHand, up));
+    indexCell({ kind: 'hard', total, upcard: up, type: 'hard', cat });
   }
-  return {
-    hand: shuffle(hand),
-    upcard: randomItem(DEALER_UPCARDS),
-    type,
-  };
+}
+for (const total of SOFT_KEYS) {
+  for (const up of DEALER_UPCARDS) {
+    const repHand = softHand(total);
+    const cat = classifyDecision(repHand, up, getOptimalAction(repHand, up));
+    indexCell({ kind: 'soft', total, upcard: up, type: 'soft', cat });
+  }
+}
+for (const rank of PAIR_KEYS) {
+  for (const up of DEALER_UPCARDS) {
+    indexCell({ kind: 'pair', rank, upcard: up, type: 'pair', cat: 'split' });
+  }
+}
+
+function cellToSituation(cell) {
+  let hand;
+  if (cell.kind === 'hard') hand = hardHand(cell.total);
+  else if (cell.kind === 'soft') hand = softHand(cell.total);
+  else hand = pairHand(cell.rank);
+  return { hand: shuffle(hand), upcard: cell.upcard, type: cell.type };
+}
+
+// Pick a (cat, type) bucket key proportional to the player's cost / total
+// in that bucket. Returns null when there's no observed loss anywhere yet.
+function pickWeightedBucketKey(stats) {
+  const keys = Object.keys(BUCKETS);
+  const weights = keys.map(key => {
+    const [cat, type] = key.split('-');
+    const b = stats?.byCategory?.[cat]?.byType?.[type];
+    if (!b || b.total === 0 || b.cost <= 0) return 0;
+    return b.cost / b.total;
+  });
+  const total = weights.reduce((s, w) => s + w, 0);
+  if (total === 0) return null;
+  let r = Math.random() * total;
+  for (let i = 0; i < keys.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return keys[i];
+  }
+  return keys[keys.length - 1];
+}
+
+export function dealSituation(stats) {
+  // Uniform exploration over every chart cell.
+  if (!stats || Math.random() < EXPLORATION_RATE) {
+    return cellToSituation(randomItem(CELLS));
+  }
+  // Exploitation: bias toward where the player is leaking EV.
+  const bucketKey = pickWeightedBucketKey(stats);
+  if (!bucketKey) return cellToSituation(randomItem(CELLS));
+  return cellToSituation(randomItem(BUCKETS[bucketKey]));
 }

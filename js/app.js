@@ -23,10 +23,19 @@ const modes = {
     statLabels: ['accuracy', 'ev loss', 'hands'],
   },
   play: {
-    activate: () => play.activate(playStats, renderPlayStats),
+    activate: () => play.activate(playStats, renderPlayStats, {
+      timerEnabled: persistedSettings.timerEnabled,
+      onTimerChange: (enabled) => { persistedSettings.timerEnabled = enabled; persist(); },
+    }),
     deactivate: () => play.deactivate(),
     renderStats: renderPlayStats,
     statLabels: ['net', 'ev loss', 'hands'],
+  },
+  learn: {
+    activate: () => {},
+    deactivate: () => {},
+    renderStats: () => {},          // no header stats in learn mode
+    statLabels: ['', '', ''],
   },
 };
 
@@ -36,7 +45,8 @@ let currentMode = null;
 const persisted = loadPersisted();
 const practiceStats = migrateStats(persisted.practice ?? createStats());
 const playStats = migrateStats(persisted.play ?? createPlayStats());
-const initialMode = persisted.mode === 'play' ? 'play' : 'practice';
+const persistedSettings = persisted.settings ?? { timerEnabled: false };
+const initialMode = ['practice', 'play', 'learn'].includes(persisted.mode) ? persisted.mode : 'practice';
 
 function loadPersisted() {
   try {
@@ -47,6 +57,7 @@ function loadPersisted() {
       practice: data.practice && isPracticeShape(data.practice) ? data.practice : null,
       play: data.play && isPlayShape(data.play) ? data.play : null,
       mode: data.mode,
+      settings: data.settings && typeof data.settings === 'object' ? data.settings : null,
     };
   } catch {
     return {};
@@ -66,6 +77,7 @@ function persist() {
       practice: practiceStats,
       play: playStats,
       mode: currentMode,
+      settings: persistedSettings,
     }));
   } catch {
     // storage unavailable / quota — ignore
@@ -76,6 +88,7 @@ function switchMode(name) {
   if (currentMode === name) return;
   if (currentMode) modes[currentMode].deactivate();
   currentMode = name;
+  document.body.dataset.mode = name;
   for (const tab of document.querySelectorAll('.mode-tab')) {
     tab.classList.toggle('active', tab.dataset.mode === name);
   }
@@ -292,7 +305,7 @@ document.querySelectorAll('.header .stat').forEach(el => {
 // Vertical motion still goes to the browser (so the analytics scroll works).
 const SWIPE_MIN_DX = 60;
 const SWIPE_MAX_DY_RATIO = 1.5;
-const SWIPEABLE_MODES = ['practice', 'play'];
+const SWIPEABLE_MODES = ['practice', 'play', 'learn'];
 // Don't arm the swipe handler when the touch starts on an interactive
 // element — otherwise tapping a tab, an action button, or an expandable
 // analytics row can be misread as a tiny swipe and the iOS click also
@@ -321,12 +334,7 @@ appEl.addEventListener('touchend', e => {
   const i = SWIPEABLE_MODES.indexOf(currentMode);
   if (i === -1) return;
   const next = i + (dx < 0 ? 1 : -1);
-  if (next >= 0 && next < SWIPEABLE_MODES.length) {
-    switchMode(SWIPEABLE_MODES[next]);
-  } else if (next === SWIPEABLE_MODES.length) {
-    // Swiping past the last in-page mode lands on the Learn page.
-    window.location.href = 'concepts.html';
-  }
+  if (next >= 0 && next < SWIPEABLE_MODES.length) switchMode(SWIPEABLE_MODES[next]);
 });
 
 switchMode(initialMode);

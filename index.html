@@ -50,7 +50,9 @@
       display: flex;
       flex-direction: column;
       /* svh = smallest viewport (URL bar visible). Prevents the cards from
-         drifting apart when iOS Safari collapses its chrome on scroll. */
+         drifting apart when iOS Safari collapses its chrome on scroll.
+         In learn mode the article scrolls past 100svh; we drop the cap
+         further down via body[data-mode="learn"]. */
       height: 100svh;
       max-width: 480px;
       margin: 0 auto;
@@ -61,6 +63,36 @@
          scroll into the analytics section) while horizontal gestures are
          ours to interpret as tab swipes. */
       touch-action: pan-y;
+    }
+
+    /* Mode-driven visibility. Set by the pre-paint script via body[data-mode]. */
+    body[data-mode="learn"] .header,
+    body[data-mode="learn"] .table,
+    body[data-mode="learn"] .footer,
+    body[data-mode="learn"] .analytics { display: none; }
+    body[data-mode="learn"] .app {
+      height: auto;
+      min-height: 100svh;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    body:not([data-mode="learn"]) .learn-view { display: none; }
+    body[data-mode="learn"] .learn-view { display: block; }
+
+    /* Scroll-snap in game modes only: a small accidental scroll bounces back
+       to the game; reaching the analytics requires a deliberate full swipe
+       (or the tap-on-stats handler that does scrollIntoView). Learn mode
+       keeps natural scrolling since the article is meant to be read top-down. */
+    body[data-mode="practice"],
+    body[data-mode="play"] {
+      scroll-snap-type: y mandatory;
+    }
+    body[data-mode="practice"] .app,
+    body[data-mode="play"] .app,
+    body[data-mode="practice"] .analytics,
+    body[data-mode="play"] .analytics {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
     }
 
     /* ---------- mode tabs ---------- */
@@ -119,6 +151,39 @@
       letter-spacing: 0.1em;
       color: var(--muted);
     }
+    .timer-toggle {
+      appearance: none;
+      -webkit-appearance: none;
+      font: inherit;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px 8px;
+      margin-top: 5px;
+      cursor: pointer;
+      line-height: 1.1;
+    }
+    .timer-toggle.active {
+      background: var(--good-bg);
+      color: var(--good);
+      border-color: var(--good-border);
+    }
+    .timer-toggle.running {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-color: var(--warn-border);
+    }
+    .timer-toggle.urgent {
+      background: var(--bad-bg);
+      color: var(--bad);
+      border-color: var(--bad-border);
+    }
+    /* Only play mode shows the timer toggle. */
+    body[data-mode="play"] .timer-toggle { display: inline-flex; }
+    body:not([data-mode="play"]) .timer-toggle { display: none; }
 
     /* ---------- table area ---------- */
     .table {
@@ -431,10 +496,10 @@
     }
     .cat-name {
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13.5px;
       flex-shrink: 0;
     }
-    .cat-stats { display: flex; gap: 9px; }
+    .cat-stats { display: flex; gap: 6px; }
     .cat-stat {
       display: flex;
       flex-direction: column;
@@ -443,14 +508,15 @@
       min-width: 0;
     }
     .cat-stat .num {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
-    .cat-row.good .cat-stat:nth-child(n+2) .num { color: var(--good); }
-    .cat-row.warn .cat-stat:nth-child(n+2) .num { color: var(--warn); }
-    .cat-row.bad  .cat-stat:nth-child(n+2) .num { color: var(--bad); }
+    .cat-stat-meta .num { color: var(--muted) !important; }
+    .cat-row.good .cat-stat:not(.cat-stat-meta) .num { color: var(--good); }
+    .cat-row.warn .cat-stat:not(.cat-stat-meta) .num { color: var(--warn); }
+    .cat-row.bad  .cat-stat:not(.cat-stat-meta) .num { color: var(--bad); }
     .cat-stat .lbl {
       font-size: 9px;
       text-transform: uppercase;
@@ -504,9 +570,132 @@
       font-size: 13.5px;
       color: var(--text);
     }
-    .cat-sub.good .cat-stat:nth-child(n+2) .num { color: var(--good); }
-    .cat-sub.warn .cat-stat:nth-child(n+2) .num { color: var(--warn); }
-    .cat-sub.bad  .cat-stat:nth-child(n+2) .num { color: var(--bad); }
+    .cat-sub.good .cat-stat:not(.cat-stat-meta) .num { color: var(--good); }
+    .cat-sub.warn .cat-stat:not(.cat-stat-meta) .num { color: var(--warn); }
+    .cat-sub.bad  .cat-stat:not(.cat-stat-meta) .num { color: var(--bad); }
+
+    /* ---------- learn view (inlined from former concepts.html) ---------- */
+    .learn-view {
+      padding: 0 4px 48px;
+      line-height: 1.55;
+      font-size: 15.5px;
+    }
+    .learn-view h1 {
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      margin: 18px 0 4px;
+    }
+    .learn-view .lede {
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
+    .learn-view h2 {
+      font-size: 18px;
+      margin: 32px 0 10px;
+      padding-top: 4px;
+      letter-spacing: -0.01em;
+    }
+    .learn-view h3 {
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 22px 0 8px;
+    }
+    .learn-view p { margin: 0 0 12px; }
+    .learn-view ul { margin: 0 0 14px; padding-left: 20px; }
+    .learn-view li { margin: 4px 0; }
+    .learn-view b, .learn-view strong { color: var(--text); font-weight: 600; }
+    .learn-view em { color: var(--text); font-style: normal; font-weight: 500; }
+    .learn-view code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      background: var(--surface-2);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .learn-view .callout {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--text);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 14px 0 18px;
+      color: var(--text);
+    }
+    .learn-view .callout.good { border-left-color: var(--good); background: var(--good-bg); }
+    .learn-view .callout.warn { border-left-color: var(--warn); background: var(--warn-bg); }
+    .learn-view .callout.bad  { border-left-color: var(--bad);  background: var(--bad-bg); }
+    .learn-view .callout p:last-child { margin-bottom: 0; }
+
+    .learn-view .edge-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 10px 12px;
+      margin: 6px 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      align-items: center;
+    }
+    .learn-view .edge-row .label { font-weight: 500; }
+    .learn-view .edge-row .value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+    }
+    .learn-view .edge-row.bad  .value { color: var(--bad); }
+    .learn-view .edge-row.warn .value { color: var(--warn); }
+    .learn-view .edge-row.good .value { color: var(--good); }
+
+    .learn-view .bust-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 14px 0 8px;
+    }
+    .learn-view .bust-row {
+      display: grid;
+      grid-template-columns: 22px 1fr 42px;
+      align-items: center;
+      gap: 10px;
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+    }
+    .learn-view .bust-row .upcard { font-weight: 600; text-align: right; }
+    .learn-view .bust-row .bar {
+      background: var(--surface-2);
+      border-radius: 4px;
+      height: 14px;
+      overflow: hidden;
+    }
+    .learn-view .bust-row .bar > span {
+      display: block;
+      height: 100%;
+      background: var(--muted);
+    }
+    .learn-view .bust-row.weak   .bar > span { background: var(--good); }
+    .learn-view .bust-row.strong .bar > span { background: var(--bad); }
+    .learn-view .bust-row .value { color: var(--muted); }
+    .learn-view .bust-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+    .learn-view .chart-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 4px 0 18px;
+    }
+    .learn-view .learn-footer {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
   </style>
 </head>
 <body>
@@ -514,24 +703,29 @@
     <nav class="mode-tabs">
       <button class="mode-tab" type="button" data-mode="practice">Practice</button>
       <button class="mode-tab" type="button" data-mode="play">Play</button>
-      <a class="mode-tab" href="concepts.html">Learn</a>
+      <button class="mode-tab" type="button" data-mode="learn">Learn</button>
     </nav>
 
     <header class="header">
       <div class="stat"><span class="value" id="stat-1">—</span><span class="label"></span></div>
-      <div class="stat"><span class="value" id="stat-2">0</span><span class="label"></span></div>
+      <div class="stat">
+        <span class="value" id="stat-2">0</span>
+        <span class="label"></span>
+        <button class="timer-toggle" id="timer-toggle" type="button">⏱ off</button>
+      </div>
       <div class="stat"><span class="value" id="stat-3">0</span><span class="label"></span></div>
     </header>
     <script>
       // Pre-paint setup: pick the right tab and stat labels from localStorage
-      // BEFORE the rest of the body renders, so returning from Learn in
-      // 'play' state doesn't flash Practice first.
+      // BEFORE the rest of the body renders, so swapping modes (especially
+      // returning into 'play' or 'learn') doesn't flash Practice first.
       (() => {
         let mode = 'practice';
         try {
           const m = JSON.parse(localStorage.getItem('blackjack-trainer:v1') || '{}').mode;
-          if (m === 'play') mode = 'play';
+          if (m === 'play' || m === 'learn') mode = m;
         } catch {}
+        document.body.dataset.mode = mode;
         document.querySelector(`.mode-tab[data-mode="${mode}"]`)?.classList.add('active');
         const labels = mode === 'play'
           ? ['net', 'ev loss', 'hands']
@@ -560,6 +754,182 @@
       <div class="actions" id="actions"></div>
       <div class="version-stamp">—</div>
     </footer>
+
+    <article class="learn-view" hidden>
+      <h1>Strategy Guide</h1>
+      <p class="lede">From the rules of the table to the chart this app teaches — one short page.</p>
+
+      <h2>0. How the game works</h2>
+
+      <p><strong>Goal:</strong> get a hand total closer to 21 than the dealer, without going over (busting).</p>
+
+      <p><strong>Card values:</strong> 2–9 are face value, 10/J/Q/K all count as 10, and an Ace counts as 1 <em>or</em> 11 — whichever doesn't bust. A hand that uses an Ace as 11 is called a <em>soft</em> hand (e.g. A,6 = soft 17).</p>
+
+      <p><strong>The deal:</strong> you get two cards face up, the dealer gets one face up (the <em>upcard</em>) and one face down (the <em>hole card</em>). You play your hand to completion, then the dealer reveals and plays theirs.</p>
+
+      <p><strong>Your moves:</strong></p>
+      <ul>
+        <li><strong>Hit</strong> — take another card.</li>
+        <li><strong>Stand</strong> — keep your total, end your turn.</li>
+        <li><strong>Double</strong> — double your bet, take <em>exactly one</em> more card, then stand. First decision only.</li>
+        <li><strong>Split</strong> — if your two cards have the same value, split into two hands (each gets a new card) and play them independently. Costs a second bet.</li>
+        <li><strong>Surrender</strong> — fold the hand and get <em>half</em> your bet back. First decision only (late surrender, this variant).</li>
+      </ul>
+
+      <p><strong>Payouts:</strong></p>
+      <ul>
+        <li>Beat the dealer → <strong>+1</strong> unit per unit bet.</li>
+        <li>Lose, or bust at any point → <strong>−1</strong>.</li>
+        <li>Same total → <strong>push</strong> (0).</li>
+        <li><strong>Blackjack</strong> (Ace + 10-value on the deal) → <strong>+1.5</strong>. If the dealer also has blackjack, push.</li>
+      </ul>
+
+      <h3>Dealer strategy</h3>
+      <div class="callout">
+        <p>The dealer follows a fixed mechanical rule — they make <strong>no choices</strong>:</p>
+        <ul>
+          <li>Total <strong>16 or less</strong> → must hit.</li>
+          <li>Total <strong>17 or more</strong> → must stand (including <em>soft 17</em>, this variant — "S17").</li>
+        </ul>
+        <p>No doubling, splitting, or surrendering for the dealer.</p>
+      </div>
+
+      <p>That fixed rule is the whole game's pivot. The dealer <em>must</em> draw on stiff hands (12–16) and so will bust often when their upcard is weak (2–6). They can't punish you when they're vulnerable. Your edge — the only edge a player ever gets — comes from making smarter choices than they're allowed to.</p>
+
+      <h3>Dealer bust rate by upcard</h3>
+
+      <p>Here's how often the dealer ends up busting, just from following that rule. The split between 6 and 7 is the most important number in blackjack:</p>
+
+      <div class="bust-chart" aria-label="Dealer bust probability by upcard">
+        <div class="bust-row weak">   <span class="upcard">2</span> <div class="bar"><span style="width:35.4%"></span></div> <span class="value">35.4%</span></div>
+        <div class="bust-row weak">   <span class="upcard">3</span> <div class="bar"><span style="width:37.4%"></span></div> <span class="value">37.4%</span></div>
+        <div class="bust-row weak">   <span class="upcard">4</span> <div class="bar"><span style="width:39.4%"></span></div> <span class="value">39.4%</span></div>
+        <div class="bust-row weak">   <span class="upcard">5</span> <div class="bar"><span style="width:41.6%"></span></div> <span class="value">41.6%</span></div>
+        <div class="bust-row weak">   <span class="upcard">6</span> <div class="bar"><span style="width:42.3%"></span></div> <span class="value">42.3%</span></div>
+        <div class="bust-divider"></div>
+        <div class="bust-row strong"> <span class="upcard">7</span> <div class="bar"><span style="width:26.2%"></span></div> <span class="value">26.2%</span></div>
+        <div class="bust-row strong"> <span class="upcard">8</span> <div class="bar"><span style="width:24.5%"></span></div> <span class="value">24.5%</span></div>
+        <div class="bust-row strong"> <span class="upcard">9</span> <div class="bar"><span style="width:22.8%"></span></div> <span class="value">22.8%</span></div>
+        <div class="bust-row strong"> <span class="upcard">10</span><div class="bar"><span style="width:23.0%"></span></div> <span class="value">23.0%</span></div>
+        <div class="bust-row strong"> <span class="upcard">A</span> <div class="bar"><span style="width:16.6%"></span></div> <span class="value">16.6%</span></div>
+      </div>
+      <p class="chart-caption">Computed exactly by this app's solver (<code>js/solver.js</code>): infinite-deck S17, conditioned on the dealer not having a natural blackjack (matches what the player actually sees once the hand starts). Bars scaled linearly (max ≈ 42%).</p>
+
+      <p>Two things to read off this:</p>
+      <ul>
+        <li><strong>2–6 are "bust cards"</strong> — the dealer busts roughly 35–43% of the time. Stand on anything 12+ and let them break their own hand.</li>
+        <li><strong>7–A are "strong cards"</strong> — the dealer ends up at 17+ four times out of five. Sitting on a stiff 13 against a 10 just hands them the hand; you have to draw and risk busting yourself.</li>
+      </ul>
+
+
+      <h2>1. The simplest strategy: mimic the dealer</h2>
+
+      <p>The most natural-looking strategy is to copy the dealer's rule yourself: hit on anything below 17, stand on 17+, never double, split, or surrender.</p>
+
+      <p>It feels safe. It is, in fact, the worst common strategy:</p>
+
+      <div class="edge-row bad">
+        <span class="label">"Mimic the dealer" house edge</span>
+        <span class="value">≈ 5.5%</span>
+      </div>
+
+      <p>Roughly <strong>5.5 units lost per 100 hands</strong>. Three reasons make it that bad:</p>
+      <ul>
+        <li><strong>You bust first.</strong> If you both bust, you've already lost — the dealer never has to draw. By copying their rule, you take on all the bust risk and get none of the "they bust, I sit on 13" upside.</li>
+        <li><strong>No 3:2 blackjack bonus.</strong> The dealer doesn't get paid 1.5× on a natural — you would, and you're throwing it away by not playing differently from them.</li>
+        <li><strong>No doubling, no splitting.</strong> You never push extra money in on hands where <em>you</em> have the edge (hard 11, pair of 8s, A,A).</li>
+      </ul>
+
+      <p>For reference, with this variant the <strong>optimal</strong> basic strategy gives the house only about <strong>0.5%</strong> — roughly ten times less. The next section walks from the 5.5% baseline down to that number in three steps.</p>
+
+
+      <h2>2. Improving step by step</h2>
+
+      <p>You don't need to memorize the whole chart at once. Each of the levels below shaves a chunk off the 5.5% baseline.</p>
+
+      <h3>2A. Hard totals</h3>
+
+      <p>One rule of thumb already eliminates most of the leak:</p>
+      <div class="callout good">
+        <p>When the dealer shows a <strong>bust card (2–6)</strong>, <strong>stand</strong> on any 12+.<br>
+        When the dealer shows a <strong>strong card (7–A)</strong>, <strong>hit</strong> until you reach 17.</p>
+      </div>
+
+      <p>A few specifics refine it (12 vs 2–3 is actually hit; 11 vs Ace is hit), but ignoring them costs almost nothing. With this alone you're already close to:</p>
+
+      <div class="edge-row warn">
+        <span class="label">Hard-total basics, no doubles or splits</span>
+        <span class="value">≈ 2.5%</span>
+      </div>
+
+      <p>That's more than half the edge gone, just from knowing when to stop drawing.</p>
+
+      <p><strong>Soft hands</strong> (any hand with an Ace counted as 11) need their own short rule because the Ace makes you bust-proof on one more card:</p>
+      <div class="callout good">
+        <p><strong>Soft 19, 20</strong> → stand.<br>
+        <strong>Soft 18</strong> → stand vs dealer 2–8, hit vs 9, 10, A (see 2E).<br>
+        <strong>Soft 17 and below</strong> → hit.</p>
+      </div>
+
+      <h3>2B. Doubles</h3>
+
+      <p>Doubling means: commit a second unit, take one card, stand. It's worth it when one extra card is very likely to land you on a strong hand against a weak dealer.</p>
+
+      <p>The doubles that matter most, in order of frequency × value:</p>
+      <ul>
+        <li><strong>Hard 11</strong> vs almost any dealer upcard — your most common doubling spot.</li>
+        <li><strong>Hard 10</strong> vs dealer 2–9 — same logic, slightly weaker.</li>
+        <li><strong>Hard 9</strong> vs dealer 3–6 — only when the dealer is weakest.</li>
+        <li><strong>Soft doubles</strong> — the higher your soft total, the more upcards qualify: A,6–A,7 vs 3–6; A,5 vs 4–6; A,3–A,4 vs 5–6; A,2 vs 6 only. The Ace gives you a safety net if the extra card is small.</li>
+      </ul>
+
+      <div class="edge-row warn">
+        <span class="label">Hard totals + doubles</span>
+        <span class="value">≈ 1%</span>
+      </div>
+
+      <h3>2C. Splits</h3>
+
+      <p>Only three things to memorize:</p>
+      <ul>
+        <li><strong>Always split A,A and 8,8</strong> — vs every upcard. Two aces are worth far more apart than as a soft 12; two 8s start at a miserable 16, splitting gives you two chances at a real hand.</li>
+        <li><strong>Never split 5,5 or 10,10</strong> — a pair of fives is just a hard 10 (double-down material); a pair of tens is a 20 (already great, don't break it).</li>
+        <li><strong>For the other pairs</strong>, split when the dealer is weak (roughly 2–6/7), hit otherwise. The chart fills in the details.</li>
+      </ul>
+
+      <h3>2D. Surrenders</h3>
+
+      <p>Three cells, that's it — give up the hand for half your bet back instead of playing it out:</p>
+      <ul>
+        <li><strong>Hard 16</strong> vs dealer 9, 10, or A.</li>
+        <li><strong>Hard 15</strong> vs dealer 10.</li>
+      </ul>
+      <p>You'll lose those hands roughly 60% of the time. Taking the half-unit refund beats playing them out.</p>
+
+      <h3>2E. Adjustments</h3>
+
+      <p>The narrow exceptions where both mimic <em>and</em> the bust-card rule are wrong. Under S17 there are essentially only three cells:</p>
+      <ul>
+        <li><strong>Soft 18 (A,7)</strong> vs dealer <strong>9, 10, or A</strong> — hit, don't stand. Both rules say "stand on 18+", but the dealer's strong card wins ≥ 60% of the time against your 18, and one more card can't bust you anyway.</li>
+      </ul>
+      <p>Tiny bucket, tiny EV — but if you've automated everything else, this is what's left.</p>
+
+      <div class="edge-row good">
+        <span class="label">Full basic strategy (= this app's chart)</span>
+        <span class="value">≈ 0.5%</span>
+      </div>
+
+
+      <h2>Using this app</h2>
+
+      <p>In <strong>Practice</strong> mode you get random situations and immediate feedback per decision. The badge next to each hand label tells you whether the action is the same regardless of dealer upcard — <span class="hint fixed">✓</span> means fixed (memorize it once), <span class="hint variable">?</span> means upcard-dependent (the harder cells).</p>
+
+      <p>In <strong>Play</strong> mode you play full hands against a real dealer and a 6-deck shoe. Every move is still scored against the chart, and the result banner counts how many misplays the hand contained.</p>
+
+      <footer class="learn-footer">
+        Rules variant of this app: 6 decks · Dealer stands on soft 17 · Double after split allowed · Late surrender allowed · Blackjack pays 3:2. House-edge figures are rounded approximations from standard simulations.
+      </footer>
+    </article>
   </main>
 
   <section class="analytics" id="analytics"></section>

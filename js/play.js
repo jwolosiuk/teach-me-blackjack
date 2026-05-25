@@ -25,6 +25,70 @@ let pendingTimeout = null;
 let feedbackReady = false;
 let docClickListener = null;
 
+// --- decision timer ---
+const TIMER_SECONDS = 10;
+let timerEnabled = false;
+let timerInterval = null;
+let timerRemaining = TIMER_SECONDS;
+let onTimerChange = null;     // called after toggle so the host can persist
+
+function setTimerEnabled(enabled, { silent = false } = {}) {
+  timerEnabled = enabled;
+  if (!enabled) stopTimer();
+  else if (game?.phase === 'awaiting') startTimer();
+  updateTimerButton();
+  if (!silent) onTimerChange?.(timerEnabled);
+}
+
+function startTimer() {
+  stopTimer();
+  if (!timerEnabled) return;
+  timerRemaining = TIMER_SECONDS;
+  updateTimerButton();
+  timerInterval = setInterval(() => {
+    timerRemaining -= 1;
+    if (timerRemaining <= 0) {
+      stopTimer();
+      timeoutAction();
+    } else {
+      updateTimerButton();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function timeoutAction() {
+  // On timer expiry: surrender if still legal, otherwise stand. Stand is the
+  // safest non-busting fallback when surrender isn't on the table (mid-hand,
+  // after a split, etc.).
+  const legal = legalActions();
+  const fallback = legal.includes('R') ? 'R' : 'S';
+  handleAction(fallback);
+}
+
+function updateTimerButton() {
+  const btn = $('timer-toggle');
+  if (!btn) return;
+  btn.classList.remove('active', 'running', 'urgent');
+  if (!timerEnabled) {
+    btn.textContent = '⏱ off';
+    return;
+  }
+  if (game?.phase === 'awaiting' && timerInterval !== null) {
+    btn.textContent = `⏱ ${timerRemaining}s`;
+    btn.classList.add(timerRemaining <= 3 ? 'urgent' : 'running');
+  } else {
+    btn.textContent = '⏱ on';
+    btn.classList.add('active');
+  }
+}
+
 function newHand(cards, bet = 1) {
   return {
     cards,
@@ -38,6 +102,7 @@ function newHand(cards, bet = 1) {
 
 function deal() {
   cancelTimeouts();
+  stopTimer();
   shoe = reshuffleIfLow(shoe || createShoe());
   const dealerCards = [drawCard(shoe), drawCard(shoe)];
   const playerCards = [drawCard(shoe), drawCard(shoe)];
@@ -64,6 +129,7 @@ function deal() {
     render();
     pendingTimeout = setTimeout(resolve, 650);
   } else {
+    if (timerEnabled) startTimer();
     render();
   }
 }
@@ -89,6 +155,7 @@ function handleAction(action) {
   if (game.phase !== 'awaiting') return;
   const legal = legalActions();
   if (!legal.includes(action)) return;
+  stopTimer();
   const h = activeHand();
 
   // Score against basic strategy before mutating. Skip when the chart's
@@ -149,12 +216,14 @@ function handleAction(action) {
 
 function advance() {
   if (activeHand() && activeHand().status === 'playing') {
+    if (timerEnabled) startTimer();
     render();
     return;
   }
   for (let i = game.active + 1; i < game.hands.length; i++) {
     if (game.hands[i].status === 'playing') {
       game.active = i;
+      if (timerEnabled) startTimer();
       render();
       return;
     }
@@ -354,15 +423,31 @@ function formatDelta(d) {
 
 // ---------- public API ----------
 
-export function activate(playStats, statsChangeCb) {
+export function activate(playStats, statsChangeCb, opts = {}) {
   stats = playStats;
   onStatsChange = statsChangeCb;
+  onTimerChange = opts.onTimerChange ?? null;
+  // Sync the toggle from caller-provided initial state on first activate;
+  // subsequent activates keep whatever the user last set.
+  if (opts.timerEnabled !== undefined) timerEnabled = !!opts.timerEnabled;
+
   docClickListener = maybeAdvanceOnTap;
   document.addEventListener('click', docClickListener);
+  const btn = $('timer-toggle');
+  if (btn && !btn.__bound) {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      setTimerEnabled(!timerEnabled);
+    });
+    btn.__bound = true;
+  }
+  updateTimerButton();
+
   if (game) {
     // Resume the hand the user left mid-decision (or the result banner
     // they hadn't tapped past yet).
     if (game.phase === 'result') feedbackReady = true;
+    if (timerEnabled && game.phase === 'awaiting') startTimer();
     render();
   } else {
     deal();
@@ -371,6 +456,7 @@ export function activate(playStats, statsChangeCb) {
 
 export function deactivate() {
   cancelTimeouts();
+  stopTimer();
   if (docClickListener) {
     document.removeEventListener('click', docClickListener);
     docClickListener = null;

@@ -99,6 +99,13 @@ function evText(cost, total) {
   return avg.toFixed(3);
 }
 
+function freqText(freq) {
+  if (freq === undefined || freq === null) return '—';
+  const pct = freq * 100;
+  if (pct < 0.05) return '<0.1%';
+  return pct >= 10 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`;
+}
+
 function tone({ total, correct, cost }) {
   if (total < 5) return 'neutral';
   const avgLoss = cost / total;
@@ -128,7 +135,8 @@ function adjText(d, freq) {
 function statsHtml(d, freq) {
   return `
     <span class="cat-stats">
-      <span class="cat-stat"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
+      <span class="cat-stat cat-stat-meta"><span class="num">${freqText(freq)}</span><span class="lbl">freq</span></span>
+      <span class="cat-stat cat-stat-meta"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
       <span class="cat-stat"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev loss</span></span>
       <span class="cat-stat"><span class="num">${adjText(d, freq)}</span><span class="lbl">adj</span></span>
