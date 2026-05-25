@@ -1,7 +1,7 @@
 import { dealSituation } from './deal.js';
 import { legalActions, evaluateAction } from './evaluator.js';
-import { classifyHand, strategyDependsOnUpcard } from './strategy.js';
-import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats } from './stats.js';
+import { classifyHand, strategyDependsOnUpcard, classifyDecision } from './strategy.js';
+import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats, migrateStats } from './stats.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
 import * as play from './play.js';
 
@@ -33,10 +33,8 @@ const STORAGE_KEY = 'blackjack-trainer:v1';
 
 let currentMode = null;
 const persisted = loadPersisted();
-const practiceStats = persisted.practice ?? createStats();
-if (!Array.isArray(practiceStats.recent)) practiceStats.recent = [];
-const playStats = persisted.play ?? createPlayStats();
-if (!Array.isArray(playStats.recent)) playStats.recent = [];
+const practiceStats = migrateStats(persisted.practice ?? createStats());
+const playStats = migrateStats(persisted.play ?? createPlayStats());
 const initialMode = persisted.mode === 'play' ? 'play' : 'practice';
 
 function loadPersisted() {
@@ -170,7 +168,8 @@ function handleDecision(action, e) {
   e.stopPropagation();
   pState = 'feedback';
   const result = evaluateAction({ hand: current.hand, upcard: current.upcard, action, rules: RULES });
-  updateStats(practiceStats, { result, type: current.type });
+  const category = classifyDecision(current.hand, current.upcard, result.optimal);
+  updateStats(practiceStats, { result, type: current.type, category });
   showFeedback(result);
   renderPracticeStats();
   setTimeout(() => { pFeedbackReady = true; }, 120);

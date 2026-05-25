@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e14">
+  <title>Blackjack · Stats</title>
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --surface: #161b22;
+      --surface-2: #1f242c;
+      --border: #2a313c;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --good: #3fb950;
+      --good-bg: rgba(63, 185, 80, 0.14);
+      --good-border: rgba(63, 185, 80, 0.35);
+      --bad: #f85149;
+      --bad-bg: rgba(248, 81, 73, 0.12);
+      --bad-border: rgba(248, 81, 73, 0.35);
+      --warn: #d2a24c;
+      --warn-bg: rgba(210, 162, 76, 0.16);
+      --warn-border: rgba(210, 162, 76, 0.4);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 10px 24px 0;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 1;
+    }
+    .mode-tab {
+      appearance: none;
+      -webkit-appearance: none;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      padding: 10px 0 8px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: color 160ms ease, border-color 160ms ease;
+    }
+    .mode-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+
+    article {
+      display: block;
+      padding: 8px 24px 48px;
+      line-height: 1.55;
+      font-size: 15.5px;
+    }
+    article h1 {
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      margin: 18px 0 4px;
+    }
+    article .lede {
+      color: var(--muted);
+      margin: 0 0 22px;
+    }
+    article h2 {
+      font-size: 18px;
+      margin: 28px 0 10px;
+      padding-top: 4px;
+      letter-spacing: -0.01em;
+    }
+    article p { margin: 0 0 12px; }
+
+    .overall {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 10px;
+      margin-bottom: 8px;
+    }
+    .overall .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .overall .value {
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+    .overall .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .submode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 8px 0 0;
+    }
+    .submode {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .submode .title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .submode .line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      padding: 1px 0;
+    }
+    .submode .line .k { color: var(--muted); }
+
+    .cat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 4px 0 0;
+    }
+    .cat-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .cat-row.good { border-left-color: var(--good); }
+    .cat-row.warn { border-left-color: var(--warn); }
+    .cat-row.bad  { border-left-color: var(--bad); }
+    .cat-row.neutral { border-left-color: var(--border); }
+
+    .cat-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .cat-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .cat-stats {
+      display: flex;
+      gap: 14px;
+    }
+    .cat-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .cat-stat .num {
+      font-size: 16px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .cat-row.good .cat-stat:nth-child(2) .num,
+    .cat-row.good .cat-stat:nth-child(3) .num { color: var(--good); }
+    .cat-row.warn .cat-stat:nth-child(2) .num,
+    .cat-row.warn .cat-stat:nth-child(3) .num { color: var(--warn); }
+    .cat-row.bad  .cat-stat:nth-child(2) .num,
+    .cat-row.bad  .cat-stat:nth-child(3) .num { color: var(--bad); }
+    .cat-stat .lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .cat-desc {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .empty {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 16px;
+      text-align: center;
+      color: var(--muted);
+      margin: 18px 0;
+    }
+    .empty a { color: var(--text); }
+
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      background: var(--surface-2);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    footer.small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .version-stamp {
+      display: inline-block;
+      margin-top: 8px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <nav class="mode-tabs">
+      <a class="mode-tab" href="index.html">Practice</a>
+      <a class="mode-tab" href="index.html">Play</a>
+      <a class="mode-tab" href="concepts.html">Learn</a>
+      <a class="mode-tab active" href="analytics.html">Stats</a>
+    </nav>
+
+    <article>
+      <h1>Your Stats</h1>
+      <p class="lede">Decision quality broken down by which rule was tested. Practice and Play decisions combined.</p>
+
+      <div id="empty" class="empty" hidden>
+        No decisions recorded yet. Go to <a href="index.html">Practice</a> or <a href="index.html">Play</a> and come back.
+      </div>
+
+      <div id="content" hidden>
+        <h2>Overall</h2>
+        <div class="overall">
+          <div class="cell"><span class="value" id="overall-total">0</span><span class="label">decisions</span></div>
+          <div class="cell"><span class="value" id="overall-acc">—</span><span class="label">accuracy</span></div>
+          <div class="cell"><span class="value" id="overall-ev">—</span><span class="label">ev loss</span></div>
+        </div>
+
+        <div class="submode-grid">
+          <div class="submode">
+            <div class="title">Practice</div>
+            <div class="line"><span class="k">decisions</span><span id="practice-total">0</span></div>
+            <div class="line"><span class="k">accuracy</span><span id="practice-acc">—</span></div>
+            <div class="line"><span class="k">ev loss</span><span id="practice-ev">—</span></div>
+          </div>
+          <div class="submode">
+            <div class="title">Play</div>
+            <div class="line"><span class="k">decisions</span><span id="play-total">0</span></div>
+            <div class="line"><span class="k">accuracy</span><span id="play-acc">—</span></div>
+            <div class="line"><span class="k">ev loss</span><span id="play-ev">—</span></div>
+          </div>
+        </div>
+
+        <h2>By rule category</h2>
+        <p>Each decision is bucketed by the rule it tests. Categories are mutually exclusive — every decision lands in exactly one. Sorted by EV loss, worst first.</p>
+
+        <div id="cat-rows" class="cat-list"></div>
+
+        <footer class="small">
+          EV loss is the average bet units given up versus the optimal action per decision. Accuracy is the share of decisions that exactly matched the chart.
+          <br><span class="version-stamp">—</span>
+        </footer>
+      </div>
+    </article>
+  </main>
+  <script type="module" src="js/analytics.js"></script>
+  <script type="module" src="js/version.js"></script>
+</body>
+</html>

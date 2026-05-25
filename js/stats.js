@@ -1,5 +1,24 @@
 const WINDOW = 100;
 
+const CATEGORIES = ['basic', 'adjust', 'double', 'split', 'surrender'];
+
+function emptyByCategory() {
+  const out = {};
+  for (const c of CATEGORIES) out[c] = { total: 0, correct: 0, cost: 0 };
+  return out;
+}
+
+// Older persisted stats may be missing newer fields; this brings them up to date.
+export function migrateStats(stats) {
+  if (!stats) return stats;
+  if (!Array.isArray(stats.recent)) stats.recent = [];
+  if (!stats.byCategory) stats.byCategory = emptyByCategory();
+  else for (const c of CATEGORIES) {
+    if (!stats.byCategory[c]) stats.byCategory[c] = { total: 0, correct: 0, cost: 0 };
+  }
+  return stats;
+}
+
 export function createStats() {
   return {
     total: 0,
@@ -19,10 +38,12 @@ export function createStats() {
     // Rolling window of the last WINDOW decisions: { correct, cost }.
     // Drives the headline accuracy / EV-loss stats so they reflect recent play.
     recent: [],
+    // Cumulative per-rule-category breakdown for the analytics page.
+    byCategory: emptyByCategory(),
   };
 }
 
-export function updateStats(stats, { result, type }) {
+export function updateStats(stats, { result, type, category }) {
   stats.total++;
   stats.byType[type].total++;
   if (result.correct) {
@@ -37,6 +58,12 @@ export function updateStats(stats, { result, type }) {
   stats.totalOptimal += result.optimalEv;
   stats.recent.push({ correct: result.correct, cost: result.cost });
   if (stats.recent.length > WINDOW) stats.recent.shift();
+  if (category && stats.byCategory?.[category]) {
+    const bc = stats.byCategory[category];
+    bc.total++;
+    if (result.correct) bc.correct++;
+    bc.cost += result.cost;
+  }
 }
 
 export function efficiency(stats) {
@@ -71,6 +98,7 @@ export function createPlayStats() {
     netUnits: 0,
     // Same shape as practice recent[] so avgEvLoss() works on it too.
     recent: [],
+    byCategory: emptyByCategory(),
   };
 }
 
@@ -82,9 +110,15 @@ export function recordPlayOutcome(stats, outcome, delta) {
   stats.netUnits += delta;
 }
 
-export function recordPlayDecision(stats, { correct, cost }) {
+export function recordPlayDecision(stats, { correct, cost, category }) {
   stats.recent.push({ correct, cost });
   if (stats.recent.length > WINDOW) stats.recent.shift();
+  if (category && stats.byCategory?.[category]) {
+    const bc = stats.byCategory[category];
+    bc.total++;
+    if (correct) bc.correct++;
+    bc.cost += cost;
+  }
 }
 
 export function winPercent(stats) {

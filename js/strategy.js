@@ -79,3 +79,26 @@ export function strategyDependsOnUpcard(playerHand, rules = {}) {
   }
   return false;
 }
+
+// Mutually exclusive rule categories — what kind of decision is this?
+// Used by the analytics page to surface which rule the player is weakest at.
+//   'split'     — hand is a pair (every pair situation, even when optimal is H/S)
+//   'surrender' — non-pair, optimal is R
+//   'double'    — non-pair, non-R, optimal is D
+//   'basic'     — non-pair, non-R, non-D, optimal matches the simple rule
+//                   (hard: stand 12+ vs 2–6 or 17+, hit otherwise;
+//                    soft: stand 18+, hit otherwise)
+//   'adjust'    — non-pair, non-R, non-D, optimal differs from the simple rule
+//                   (the exceptions you have to memorize: 12 vs 2–3, soft 18 vs 9, …)
+export function classifyDecision(hand, upcard, optimal) {
+  if (isPair(hand)) return 'split';
+  if (optimal === 'R') return 'surrender';
+  if (optimal === 'D') return 'double';
+  const { type, total } = classifyHand(hand);
+  const basic = type === 'soft'
+    ? (total >= 18 ? 'S' : 'H')
+    : (total >= 17 ? 'S' : total <= 11 ? 'H' : (upcard <= 6 ? 'S' : 'H'));
+  return basic === optimal ? 'basic' : 'adjust';
+}
+
+export const RULE_CATEGORIES = ['basic', 'adjust', 'double', 'split', 'surrender'];
