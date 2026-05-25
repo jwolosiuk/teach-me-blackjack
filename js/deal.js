@@ -1,12 +1,12 @@
 // Practice-mode situation dealer.
 //
-// 25% of every deal is uniform random across the (category, subType)
-// buckets — pick a bucket, then pick a random cell inside. With ~10
-// active buckets every sub-skill gets equal exploration time regardless
-// of how many cells it owns in the chart.
-// The remaining 75% is exploitation: weighted by the player's per-bucket
-// avg EV loss over a rolling window of the last ~7 decisions in that
-// bucket. Recent improvement makes a bucket's weight drop quickly; one
+// 40% of every deal is uniform exploration across the (category, subType)
+// buckets — pick a bucket, then pick a random cell inside. Every sub-skill
+// gets equal exploration time regardless of how many cells it owns.
+// The remaining 60% is exploitation: weighted by sqrt of the player's
+// per-bucket avg EV loss over a rolling window of the last ~7 decisions.
+// The sqrt softens the weighting so a heavily-leaking bucket can't
+// monopolise the deal; second/third worst keep a real share. Recent improvement makes a bucket's weight drop quickly; one
 // old mistake doesn't haunt the user indefinitely. Buckets with no recent
 // observations have zero exploit weight, so exploration alone seeds them.
 
@@ -17,7 +17,7 @@ const HARD_KEYS = Object.keys(hardTotals).map(Number);
 const SOFT_KEYS = Object.keys(softTotals).map(Number);
 const PAIR_KEYS = Object.keys(pairs);
 
-const EXPLORATION_RATE = 0.25;
+const EXPLORATION_RATE = 0.40;
 
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -104,9 +104,11 @@ function cellToSituation(cell) {
   return { hand: shuffle(hand), upcard: cell.upcard, type: cell.kind };
 }
 
-// Pick a (cat, subType) bucket key proportional to avg ev loss in the
-// bucket's recent window (cost / n). Falls back to null when no bucket
-// has any recent observations — caller switches to exploration.
+// Pick a (cat, subType) bucket key proportional to sqrt(avg ev loss) in
+// the bucket's recent window. The sqrt softens the distribution so the
+// worst bucket doesn't lock down 80%+ of exploit deals — second / third
+// worst still get a real share. Falls back to null when no bucket has any
+// recent observations; caller switches to exploration.
 function pickWeightedBucketKey(stats) {
   const keys = Object.keys(BUCKETS);
   const weights = keys.map(key => {
@@ -115,7 +117,8 @@ function pickWeightedBucketKey(stats) {
     if (!recent || recent.length === 0) return 0;
     let sum = 0;
     for (const r of recent) sum += r.cost;
-    return sum > 0 ? sum / recent.length : 0;
+    const avg = sum / recent.length;
+    return avg > 0 ? Math.sqrt(avg) : 0;
   });
   const total = weights.reduce((s, w) => s + w, 0);
   if (total === 0) return null;

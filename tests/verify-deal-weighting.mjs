@@ -70,7 +70,7 @@ const skewed = tally(leakSurrender, N);
 for (const [k, v] of Object.entries(skewed)) {
   console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}  ${pct(v, N)}`);
 }
-console.log('\nExpect surrender ~75% exploit + 2.5% exploration = ~78%. Others get ~2.5-5% each from exploration alone (2-sub cats get 5%, single-sub 2.5%).');
+console.log('\nWith sqrt + 40% explore: surrender ~64% (60% exploit + 4% explore), others ~4-8% from exploration (single-sub 4%, 2-sub 8%).');
 
 // 3. Two leaky buckets, doubles 2x heavier than mimic.
 console.log('\nMimic leaks 0.02/decision, double leaks 0.04/decision (everything else perfect):');
@@ -88,10 +88,10 @@ const twoLeaksRes = tally(twoLeaks, N);
 for (const [k, v] of Object.entries(twoLeaksRes)) {
   console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}  ${pct(v, N)}`);
 }
-// mimic-hard weight: 2.0/90 = 0.0222; double-hard weight: 1.0/20 = 0.05
-// 90% exploit pool: mimic ~28%, double ~62%. Plus 1% per sub-bucket from
-// the 10% exploration. So:
-//   mimic ~30% (~28% exploit + 2% exploration from 2 sub-buckets)
-//   double ~64% (~62% exploit + 2% exploration)
-//   others ~1-2% each (exploration only).
-console.log('\nExpect double ~57%, mimic ~28%, others ~2-5% each (25% exploration spread across 10 sub-buckets).');
+// With sqrt: sqrt(0.022) = 0.149 (mimic-hard), sqrt(0.05) = 0.224 (double-hard).
+// 60% exploit pool: mimic ~24%, double ~36%. Plus 4% explore per single-sub
+// category or 8% per 2-sub category. So:
+//   mimic ~32% (24% + 8% explore across hard+soft)
+//   double ~44% (36% + 8%)
+//   others ~4-8% each (explore only).
+console.log('\nWith sqrt + 40% explore: double ~44%, mimic ~32%, others ~4-8% (much less stuck than linear weighting).');
