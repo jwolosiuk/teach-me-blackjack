@@ -25,7 +25,7 @@ const modes = {
     activate: () => play.activate(playStats, renderPlayStats),
     deactivate: () => play.deactivate(),
     renderStats: renderPlayStats,
-    statLabels: ['ev loss', 'hands', 'net'],
+    statLabels: ['net', 'ev loss', 'hands'],
   },
 };
 
@@ -249,12 +249,12 @@ function deactivatePractice() {
 // ---------- play-mode stat rendering (data lives in play.js) ----------
 
 function renderPlayStats() {
-  const evl = avgEvLoss(playStats);
-  $('stat-1').textContent = evl === null ? '—' : evl.toFixed(3);
-  $('stat-2').textContent = String(playStats.hands);
   const net = playStats.netUnits;
   const sign = net > 0 ? '+' : '';
-  $('stat-3').textContent = net === 0 ? '0' : `${sign}${Number.isInteger(net) ? net : net.toFixed(1)}`;
+  $('stat-1').textContent = net === 0 ? '0' : `${sign}${Number.isInteger(net) ? net : net.toFixed(1)}`;
+  const evl = avgEvLoss(playStats);
+  $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
+  $('stat-3').textContent = String(playStats.hands);
   persist();
 }
 
