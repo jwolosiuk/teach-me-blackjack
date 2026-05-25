@@ -19,12 +19,12 @@
 </head>
 <body>
   <h1>Blackjack Strategy Engine — Tests</h1>
-  <p class="note">Rules: 6D · S17 · DAS · LS. Reference: <a href="reference-chart.md">reference-chart.md</a>.</p>
+  <p class="note">Rules: 6D · S17 · DAS · LS. Reference: <a href="tests/reference-chart.md">tests/reference-chart.md</a>.</p>
   <div id="output"></div>
 
   <script type="module">
-    import { getOptimalAction, classifyHand, isPair } from '../js/strategy.js';
-    import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from '../js/strategy-table.js';
+    import { getOptimalAction, classifyHand, isPair } from './js/strategy.js';
+    import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './js/strategy-table.js';
 
     // --- Tiny harness ---
     const results = [];
