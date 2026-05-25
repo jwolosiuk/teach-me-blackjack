@@ -236,9 +236,9 @@ function renderDealer() {
   }
 
   const label = $('dealer-label');
-  label.textContent = (game.phase === 'awaiting')
-    ? 'Dealer'
-    : `Dealer · ${handTotal(game.dealer)}${isBust(game.dealer) ? ' (Bust)' : ''}`;
+  if (game.phase !== 'awaiting' && isBust(game.dealer)) label.textContent = 'Dealer · Bust';
+  else if (game.phase !== 'awaiting' && isBlackjack(game.dealer)) label.textContent = 'Dealer · Blackjack';
+  else label.textContent = 'Dealer';
 }
 
 function renderPlayer() {
@@ -250,8 +250,9 @@ function renderPlayer() {
   if (game.hands.length > 1) {
     label.hidden = true;
   } else {
-    label.hidden = false;
-    label.innerHTML = formatHandSummary(game.hands[0]);
+    const summary = formatHandSummary(game.hands[0]);
+    label.hidden = summary === '';
+    label.innerHTML = summary;
   }
 
   if (game.hands.length === 1) {
@@ -267,21 +268,25 @@ function renderPlayer() {
     cards.className = 'cards split-cards';
     h.display.forEach(c => cards.appendChild(renderCard(c)));
     group.appendChild(cards);
-    const total = document.createElement('div');
-    total.className = 'split-label';
-    total.innerHTML = formatHandSummary(h);
-    group.appendChild(total);
+    const summary = formatHandSummary(h);
+    if (summary !== '') {
+      const total = document.createElement('div');
+      total.className = 'split-label';
+      total.innerHTML = summary;
+      group.appendChild(total);
+    }
     wrap.appendChild(group);
   });
 }
 
+// Play mode hides the running total — the user reads the cards. We still
+// surface terminal states (Blackjack / Bust / Surrender) since those drive
+// the result and shouldn't be left ambiguous.
 function formatHandSummary(h) {
   if (h.status === 'surrendered') return 'Surrender';
   if (isBlackjack(h.cards)) return 'Blackjack';
-  const t = handTotal(h.cards);
-  if (h.status === 'bust') return `${t} · Bust`;
-  if (isSoft(h.cards) && t < 21) return `Soft ${t}`;
-  return String(t);
+  if (h.status === 'bust') return 'Bust';
+  return '';
 }
 
 function renderActions() {

@@ -49,7 +49,9 @@
     .app {
       display: flex;
       flex-direction: column;
-      height: 100dvh;
+      /* svh = smallest viewport (URL bar visible). Prevents the cards from
+         drifting apart when iOS Safari collapses its chrome on scroll. */
+      height: 100svh;
       max-width: 480px;
       margin: 0 auto;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
@@ -349,35 +351,7 @@
     }
 
     /* ---------- analytics (below the fold) ---------- */
-    .scroll-hint {
-      appearance: none;
-      -webkit-appearance: none;
-      display: block;
-      width: 100%;
-      font: inherit;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 0;
-      margin-top: 8px;
-      cursor: pointer;
-      text-align: center;
-    }
-    .scroll-hint:active { background: var(--surface-2); }
-    .scroll-hint::after {
-      content: '  ▾';
-      display: inline-block;
-      animation: hintBounce 1.4s ease-in-out infinite;
-    }
-    @keyframes hintBounce {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(3px); }
-    }
+    .stat { cursor: pointer; }
 
     .analytics {
       max-width: 480px;
@@ -518,7 +492,6 @@
         <div class="feedback" id="feedback" hidden></div>
       </div>
       <div class="actions" id="actions"></div>
-      <button class="scroll-hint" type="button" id="scroll-to-stats">your stats</button>
       <div class="version-stamp">—</div>
     </footer>
   </main>
