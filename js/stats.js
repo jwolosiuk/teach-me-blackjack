@@ -2,9 +2,10 @@ const WINDOW = 100;
 // Rolling window per (cat, subType) bucket. Drives the practice deal's
 // exploitation weight so it tracks the player's recent skill rather than
 // their lifetime cumulative cost — old mistakes age out, recent improvement
-// drops the weight, non-stationarity handled cleanly. 30 ≈ 1-2 minutes of
-// practice in one bucket, enough sample to smooth single-deal noise.
-export const BUCKET_WINDOW = 30;
+// drops the weight, non-stationarity handled cleanly. 17 ≈ ~1 minute of
+// practice in one bucket; small enough to forget quickly, big enough to
+// smooth single-deal noise.
+export const BUCKET_WINDOW = 17;
 
 const CATEGORIES = ['mimic', 'hardTotals', 'double', 'split', 'surrender', 'adjust'];
 // Every possible byCategory sub-bucket key. Most categories only populate two

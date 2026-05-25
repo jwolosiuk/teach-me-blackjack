@@ -5,7 +5,7 @@
 // active buckets every sub-skill gets equal exploration time regardless
 // of how many cells it owns in the chart.
 // The remaining 75% is exploitation: weighted by the player's per-bucket
-// avg EV loss over a rolling window of the last 30 decisions in that
+// avg EV loss over a rolling window of the last ~17 decisions in that
 // bucket. Recent improvement makes a bucket's weight drop quickly; one
 // old mistake doesn't haunt the user indefinitely. Buckets with no recent
 // observations have zero exploit weight, so exploration alone seeds them.

@@ -6,6 +6,7 @@
 
 import { dealSituation } from '../js/deal.js';
 import { classifyDecision, getOptimalAction } from '../js/strategy.js';
+import { BUCKET_WINDOW } from '../js/stats.js';
 
 function classify(situation) {
   const optimal = getOptimalAction(situation.hand, situation.upcard);
@@ -39,10 +40,10 @@ for (const [k, v] of Object.entries(baseline)) {
 //    surrender pulled way above its baseline share even though it's a rare
 //    cell in the chart.
 //
-// Bucket factory: also seeds a recent[] window (capped at 30) with the
-// same avg cost — that's what the sampler actually reads from.
+// Bucket factory: also seeds a recent[] window (capped at BUCKET_WINDOW)
+// with the same avg cost — that's what the sampler actually reads from.
 function bucket(total, correct, cost) {
-  const recentN = Math.min(total, 30);
+  const recentN = Math.min(total, BUCKET_WINDOW);
   const avgCost = total > 0 ? cost / total : 0;
   const recent = [];
   for (let i = 0; i < recentN; i++) recent.push({ correct: i < correct, cost: avgCost });
