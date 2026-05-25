@@ -215,11 +215,10 @@ export function renderAnalytics(root, stats, { sortBy = 'adj' } = {}) {
   for (const c of RULE_CATEGORIES) byCats[c] = readCategory(stats, c);
   const all = overall(byCats);
 
-  if (all.total === 0) {
-    root.innerHTML = `<div class="analytics-empty">No decisions yet — play a few hands to see your stats here.</div>`;
-    return;
-  }
-
+  // No data → fall back to Learn-page order (the order RULE_CATEGORIES is
+  // declared in). With data, sort by ev loss or adj depending on the mode;
+  // buckets that still have no data tie at -1 and (thanks to Array.sort
+  // being stable since ES2019) keep their Learn order at the bottom.
   const ordered = RULE_CATEGORIES.map(c => ({
     key: c,
     data: byCats[c],

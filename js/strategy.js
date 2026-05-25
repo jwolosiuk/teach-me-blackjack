@@ -119,5 +119,7 @@ export function classifyDecision(hand, upcard, optimal) {
   return { category: hardRule === optimal ? 'hardTotals' : 'adjust', subType: handSub };
 }
 
-export const RULE_CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
+// Ordered to match the Learn page progression (1, 2A, 2B, 2C, 2D, 2E),
+// so empty stats and ties on the sort key fall back to a sensible default.
+export const RULE_CATEGORIES = ['mimic', 'hardTotals', 'double', 'split', 'surrender', 'adjust'];
 export const SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];

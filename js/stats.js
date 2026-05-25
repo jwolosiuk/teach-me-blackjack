@@ -1,6 +1,6 @@
 const WINDOW = 100;
 
-const CATEGORIES = ['mimic', 'hardTotals', 'adjust', 'double', 'split', 'surrender'];
+const CATEGORIES = ['mimic', 'hardTotals', 'double', 'split', 'surrender', 'adjust'];
 // Every possible byCategory sub-bucket key. Most categories only populate two
 // of these; split uses always/mixed, surrender uses hard. Keeping the set flat
 // makes the schema uniform and easy to migrate.
