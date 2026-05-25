@@ -30,8 +30,46 @@ const modes = {
 };
 
 let currentMode = null;
-const practiceStats = createStats();
-const playStats = createPlayStats();
+const persisted = loadPersisted();
+const practiceStats = persisted.practice ?? createStats();
+const playStats = persisted.play ?? createPlayStats();
+const initialMode = persisted.mode === 'play' ? 'play' : 'practice';
+
+const STORAGE_KEY = 'blackjack-trainer:v1';
+
+function loadPersisted() {
+  try {
+    const raw = localStorage.getItem('blackjack-trainer:v1');
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    return {
+      practice: data.practice && isPracticeShape(data.practice) ? data.practice : null,
+      play: data.play && isPlayShape(data.play) ? data.play : null,
+      mode: data.mode,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function isPracticeShape(s) {
+  return s && typeof s.total === 'number' && s.byType && s.byType.hard && s.byType.soft && s.byType.pair;
+}
+function isPlayShape(s) {
+  return s && typeof s.hands === 'number' && typeof s.wins === 'number';
+}
+
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      practice: practiceStats,
+      play: playStats,
+      mode: currentMode,
+    }));
+  } catch {
+    // storage unavailable / quota — ignore
+  }
+}
 
 function switchMode(name) {
   if (currentMode === name) return;
@@ -50,6 +88,7 @@ function switchMode(name) {
   });
   modes[name].renderStats();
   modes[name].activate();
+  persist();
 }
 
 // ---------- practice mode (single-decision training) ----------
@@ -163,6 +202,7 @@ function renderPracticeStats() {
   $('stat-1').textContent = eff === null ? '—' : `${Math.round(eff * 100)}%`;
   $('stat-2').textContent = String(practiceStats.streak);
   $('stat-3').textContent = String(practiceStats.total);
+  persist();
 }
 
 function cancelAdvance() {
@@ -205,6 +245,7 @@ function renderPlayStats() {
   const net = playStats.netUnits;
   const sign = net > 0 ? '+' : '';
   $('stat-3').textContent = net === 0 ? '0' : `${sign}${Number.isInteger(net) ? net : net.toFixed(1)}`;
+  persist();
 }
 
 // ---------- bootstrap ----------
@@ -213,4 +254,4 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
   tab.addEventListener('click', () => switchMode(tab.dataset.mode));
 });
 
-switchMode('practice');
+switchMode(initialMode);
