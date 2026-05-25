@@ -82,14 +82,17 @@
        the actual scrolling element on mobile Safari (snap-type on <body>
        is silently ignored when the html element is the scroll container).
        JS toggles html.snap-mode based on the current tab.
-       Learn keeps natural scrolling so the article is readable top-down. */
+       proximity (not mandatory) means snap only kicks in when the user
+       lets go near a snap point — mid-scroll feels normal. snap-stop:
+       always is removed so a long flick can carry past one snap point
+       in a single fluid motion. Learn keeps natural scrolling so the
+       article is readable top-down. */
     html.snap-mode {
-      scroll-snap-type: y mandatory;
+      scroll-snap-type: y proximity;
     }
     html.snap-mode .app,
     html.snap-mode .analytics {
       scroll-snap-align: start;
-      scroll-snap-stop: always;
     }
 
     /* ---------- mode tabs ---------- */
