@@ -1,15 +1,16 @@
 // Practice-mode situation dealer.
 //
-// 10% of every deal is uniform random across CATEGORIES — pick a category
-// 1-in-6, then pick a random cell inside it. This is the exploration step
-// (so rare categories like `adjust` with only 3 cells get the same air-time
-// as `mimic` with ~150 cells; cell-uniform would starve them).
-// The remaining 90% is exploitation: weighted by the player's per-(cat,
-// subType) observed EV loss (cost / total). New users with no stats fall
-// back to the same category-uniform exploration on every deal.
+// 10% of every deal is uniform random across the (category, subType)
+// buckets — pick a bucket, then pick a random cell inside. With ~10
+// active buckets (mimic-hard, mimic-soft, hardTotals-hard, …) every
+// sub-skill gets equal exploration time regardless of how many cells
+// it owns in the chart.
+// The remaining 90% is exploitation: weighted by the player's per-bucket
+// observed EV loss (cost / total). New users with no stats fall back to
+// the same uniform exploration on every deal.
 
 import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './strategy-table.js';
-import { classifyDecision, getOptimalAction, RULE_CATEGORIES } from './strategy.js';
+import { classifyDecision, getOptimalAction } from './strategy.js';
 
 const HARD_KEYS = Object.keys(hardTotals).map(Number);
 const SOFT_KEYS = Object.keys(softTotals).map(Number);
@@ -54,7 +55,6 @@ function shuffle(arr) {
 // Bucket keys are 'category-subType' (e.g. 'split-always', 'mimic-hard').
 const CELLS = [];
 const BUCKETS = {};
-const CELLS_BY_CATEGORY = {};
 
 function classifyForBucket(hand, up) {
   return classifyDecision(hand, up, getOptimalAction(hand, up));
@@ -64,7 +64,6 @@ function indexCell(cell) {
   CELLS.push(cell);
   const subKey = `${cell.cat}-${cell.subType}`;
   (BUCKETS[subKey] ||= []).push(cell);
-  (CELLS_BY_CATEGORY[cell.cat] ||= []).push(cell);
 }
 
 for (const total of HARD_KEYS) {
@@ -124,13 +123,14 @@ function pickWeightedBucketKey(stats) {
   return keys[keys.length - 1];
 }
 
+const BUCKET_KEYS = Object.keys(BUCKETS);   // cached for the hot path
+
 function exploreCell() {
-  // Uniform over the 6 rule categories, then uniform over cells in that
-  // category. Each category gets 1/6 share of exploration deals regardless
-  // of how many cells it owns in the chart.
-  const cat = randomItem(RULE_CATEGORIES);
-  const inCat = CELLS_BY_CATEGORY[cat];
-  return inCat && inCat.length ? randomItem(inCat) : randomItem(CELLS);
+  // Uniform over the (cat, subType) buckets — 10 of them — then uniform
+  // over cells inside the chosen bucket. Every sub-skill (e.g. split-always
+  // vs split-mixed) gets equal exploration regardless of cell count.
+  const bucket = randomItem(BUCKET_KEYS);
+  return randomItem(BUCKETS[bucket]);
 }
 
 export function dealSituation(stats) {
