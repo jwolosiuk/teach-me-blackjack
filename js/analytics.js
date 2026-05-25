@@ -20,8 +20,8 @@ const CATEGORY_INFO = {
   },
   adjust: {
     label: '2E. Adjustments',
-    desc: 'The narrow exceptions where both mimic and the bust-card rule are wrong: only soft 18 (A,7) vs dealer 9, 10, or A — all three are hit, both rules say stand.',
-    subTypes: ['hard', 'soft'],
+    desc: 'The narrow exceptions where both mimic and the bust-card rule are wrong: only soft 18 (A,7) vs dealer 9, 10, or A — all three are hit, both rules say stand. The whole category is soft, so no hard/soft sub-tiles.',
+    subTypes: [],
   },
   double: {
     label: '2B. Doubles',
