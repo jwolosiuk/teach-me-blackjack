@@ -15,7 +15,7 @@ const CATEGORY_INFO = {
   },
   hardTotals: {
     label: 'Hard totals',
-    desc: 'Mimic is wrong but the bust-card rule fixes it: stand on hard 12+ vs dealer 2–6 (mimic would hit and bust); hit soft 17 vs 7-A (mimic would stand).',
+    desc: 'Mimic is wrong but the basic rule fixes it. Hard 12–16 stands vs dealer 2–6 (mimic hits and busts). Soft 17 (A,6) hits vs 2 and vs 7–A (mimic stands on it because it\'s ≥17, but it\'s still a draw-once hand worth improving).',
     subTypes: ['hard', 'soft'],
   },
   adjust: {
@@ -97,31 +97,36 @@ function escapeHtml(s) {
   return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-function statsHtml(d) {
+// `totalAll` is the denominator for the frequency-adjusted EV loss column:
+// cost / all_decisions, so a category that's rare but bleeds heavy can be
+// compared apples-to-apples with one that's common but cheap. Summing the
+// adj column across categories equals the overall ev loss.
+function statsHtml(d, totalAll) {
   return `
     <span class="cat-stats">
       <span class="cat-stat"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
       <span class="cat-stat"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev loss</span></span>
+      <span class="cat-stat"><span class="num">${evText(d.cost, totalAll)}</span><span class="lbl">adj</span></span>
     </span>
   `;
 }
 
-function subRowsHtml(byType, types) {
+function subRowsHtml(byType, types, totalAll) {
   return types.map(t => {
     const d = byType[t];
     return `
       <div class="cat-sub ${tone(d)}">
         <div class="cat-head">
           <span class="sub-name">${TYPE_LABEL[t]}</span>
-          ${statsHtml(d)}
+          ${statsHtml(d, totalAll)}
         </div>
       </div>
     `;
   }).join('');
 }
 
-function categoryHtml(key, data) {
+function categoryHtml(key, data, totalAll) {
   const info = CATEGORY_INFO[key];
   const t = tone(data);
   const expandable = info.subTypes.length > 0;
@@ -129,7 +134,7 @@ function categoryHtml(key, data) {
   const headInner = `
     <div class="cat-head">
       <span class="cat-name">${escapeHtml(info.label)}${expandable ? '<span class="chev">▸</span>' : ''}</span>
-      ${statsHtml(data)}
+      ${statsHtml(data, totalAll)}
     </div>
     <div class="cat-desc">${escapeHtml(info.desc)}</div>
   `;
@@ -139,7 +144,7 @@ function categoryHtml(key, data) {
   return `
     <details class="cat-row ${t}" data-cat="${key}" ${isOpen ? 'open' : ''}>
       <summary>${headInner}</summary>
-      <div class="cat-subs">${subRowsHtml(data.byType, info.subTypes)}</div>
+      <div class="cat-subs">${subRowsHtml(data.byType, info.subTypes, totalAll)}</div>
     </details>
   `;
 }
@@ -173,7 +178,7 @@ export function renderAnalytics(root, stats) {
     </div>
   `;
 
-  const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data)).join('');
+  const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data, all.total)).join('');
 
   root.innerHTML = `
     <h2 class="analytics-title">By rule category</h2>

@@ -279,11 +279,19 @@ document.querySelectorAll('.header .stat').forEach(el => {
 const SWIPE_MIN_DX = 60;
 const SWIPE_MAX_DY_RATIO = 1.5;
 const SWIPEABLE_MODES = ['practice', 'play'];
+// Don't arm the swipe handler when the touch starts on an interactive
+// element — otherwise tapping a tab, an action button, or an expandable
+// analytics row can be misread as a tiny swipe and the iOS click also
+// gets lost behind the touchend handler on some builds.
+const SWIPE_IGNORE_SELECTOR = 'button, a, summary, details, .mode-tabs, .actions, .header';
 const appEl = document.querySelector('.app');
 let swipeStartX = 0, swipeStartY = 0, swipeActive = false;
 
 appEl.addEventListener('touchstart', e => {
-  if (e.touches.length !== 1) { swipeActive = false; return; }
+  if (e.touches.length !== 1 || e.target.closest(SWIPE_IGNORE_SELECTOR)) {
+    swipeActive = false;
+    return;
+  }
   swipeStartX = e.touches[0].clientX;
   swipeStartY = e.touches[0].clientY;
   swipeActive = true;

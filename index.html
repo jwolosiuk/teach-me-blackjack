@@ -431,27 +431,26 @@
     }
     .cat-name {
       font-weight: 600;
-      font-size: 14.5px;
+      font-size: 14px;
+      flex-shrink: 0;
     }
-    .cat-stats { display: flex; gap: 14px; }
+    .cat-stats { display: flex; gap: 9px; }
     .cat-stat {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       gap: 2px;
+      min-width: 0;
     }
     .cat-stat .num {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
-    .cat-row.good .cat-stat:nth-child(2) .num,
-    .cat-row.good .cat-stat:nth-child(3) .num { color: var(--good); }
-    .cat-row.warn .cat-stat:nth-child(2) .num,
-    .cat-row.warn .cat-stat:nth-child(3) .num { color: var(--warn); }
-    .cat-row.bad  .cat-stat:nth-child(2) .num,
-    .cat-row.bad  .cat-stat:nth-child(3) .num { color: var(--bad); }
+    .cat-row.good .cat-stat:nth-child(n+2) .num { color: var(--good); }
+    .cat-row.warn .cat-stat:nth-child(n+2) .num { color: var(--warn); }
+    .cat-row.bad  .cat-stat:nth-child(n+2) .num { color: var(--bad); }
     .cat-stat .lbl {
       font-size: 9px;
       text-transform: uppercase;
@@ -505,12 +504,9 @@
       font-size: 13.5px;
       color: var(--text);
     }
-    .cat-sub.good .cat-stat:nth-child(2) .num,
-    .cat-sub.good .cat-stat:nth-child(3) .num { color: var(--good); }
-    .cat-sub.warn .cat-stat:nth-child(2) .num,
-    .cat-sub.warn .cat-stat:nth-child(3) .num { color: var(--warn); }
-    .cat-sub.bad  .cat-stat:nth-child(2) .num,
-    .cat-sub.bad  .cat-stat:nth-child(3) .num { color: var(--bad); }
+    .cat-sub.good .cat-stat:nth-child(n+2) .num { color: var(--good); }
+    .cat-sub.warn .cat-stat:nth-child(n+2) .num { color: var(--warn); }
+    .cat-sub.bad  .cat-stat:nth-child(n+2) .num { color: var(--bad); }
   </style>
 </head>
 <body>
