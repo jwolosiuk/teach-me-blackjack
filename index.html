@@ -2,281 +2,279 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Blackjack Strategy Engine — Tests</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0e14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Blackjack Trainer</title>
   <style>
-    body { font-family: -apple-system, system-ui, sans-serif; max-width: 980px; margin: 2em auto; padding: 0 1em; color: #222; }
-    h1 { margin: 0 0 0.2em; }
-    .summary { font-size: 1.3em; margin: 0.4em 0 1.2em; padding: 0.5em 0.8em; border-radius: 4px; }
-    .summary.pass { color: #060; background: #e9f7e9; border: 1px solid #b6e0b6; font-weight: bold; }
-    .summary.fail { color: #c00; background: #fdecec; border: 1px solid #f3b3b3; font-weight: bold; }
-    h2 { margin-top: 1.6em; border-bottom: 1px solid #ccc; padding-bottom: 0.2em; font-size: 1.1em; }
-    .test { padding: 0.1em 0.4em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
-    .test.pass { color: #060; }
-    .test.fail { color: #c00; background: #fef0f0; }
-    .err { color: #800; margin: 0 0 0.4em 1.6em; font-family: ui-monospace, monospace; font-size: 0.85em; }
-    .note { color: #555; font-size: 0.9em; }
+    :root {
+      --bg: #0a0e14;
+      --surface: #161b22;
+      --surface-2: #1f242c;
+      --border: #2a313c;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --good: #3fb950;
+      --good-bg: rgba(63, 185, 80, 0.14);
+      --good-border: rgba(63, 185, 80, 0.35);
+      --bad: #f85149;
+      --bad-bg: rgba(248, 81, 73, 0.12);
+      --bad-border: rgba(248, 81, 73, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overscroll-behavior: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+    }
+
+    /* ---------- header ---------- */
+    .header {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 14px 24px 6px;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .stat .value {
+      font-size: 24px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .stat .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    /* ---------- table area ---------- */
+    .table {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding: 8px 24px;
+    }
+    .zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .zone-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+    .zone.player .zone-label {
+      font-size: 14px;
+      color: var(--text);
+      letter-spacing: 0.02em;
+      text-transform: none;
+      font-weight: 500;
+    }
+    .cards {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ---------- cards ---------- */
+    .card {
+      width: 72px;
+      height: 100px;
+      border-radius: 10px;
+      background: #fafafa;
+      color: #1a1a1a;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      animation: dealIn 220ms cubic-bezier(0.3, 0.8, 0.2, 1) backwards;
+    }
+    .card.red { color: #d3203a; }
+    .card .corner {
+      font-size: 16px;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+    .card .corner .suit { font-size: 14px; }
+    .card .corner.bot { align-self: flex-end; transform: rotate(180deg); }
+    .card .pip {
+      font-size: 32px;
+      line-height: 1;
+      text-align: center;
+      align-self: center;
+    }
+
+    .card.back {
+      background:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 6px, transparent 6px 12px),
+        linear-gradient(135deg, #2a3852, #1a2336);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .cards .card:nth-child(2) { animation-delay: 70ms; }
+    .cards .card:nth-child(3) { animation-delay: 140ms; }
+
+    @keyframes dealIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+
+    /* ---------- footer (feedback + actions) ---------- */
+    .footer {
+      padding: 0 20px calc(16px + env(safe-area-inset-bottom));
+    }
+    .feedback-slot {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .feedback {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid transparent;
+      animation: feedbackIn 160ms ease-out;
+    }
+    .feedback[hidden] { display: none; }
+    .feedback.good {
+      background: var(--good-bg);
+      color: var(--good);
+      border-color: var(--good-border);
+    }
+    .feedback.bad {
+      background: var(--bad-bg);
+      color: var(--bad);
+      border-color: var(--bad-border);
+    }
+    .feedback .icon {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .feedback b { color: inherit; font-weight: 700; }
+
+    @keyframes feedbackIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- actions ---------- */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .actions button {
+      appearance: none;
+      -webkit-appearance: none;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      min-height: 56px;
+      padding: 14px;
+      cursor: pointer;
+      transition: transform 90ms ease, background 160ms ease, border-color 160ms ease;
+    }
+    .actions button:active { transform: scale(0.97); }
+    .actions button.span-2 { grid-column: span 2; }
+
+    .actions button.chosen.good {
+      background: var(--good);
+      border-color: var(--good);
+      color: #0a0e14;
+    }
+    .actions button.chosen.bad {
+      background: var(--bad);
+      border-color: var(--bad);
+      color: #0a0e14;
+    }
+    .actions button.reveal:not(.chosen) {
+      background: var(--good-bg);
+      border-color: var(--good-border);
+      color: var(--good);
+    }
   </style>
 </head>
 <body>
-  <h1>Blackjack Strategy Engine — Tests</h1>
-  <p class="note">Rules: 6D · S17 · DAS · LS. Reference: <a href="tests/reference-chart.md">tests/reference-chart.md</a>.</p>
-  <div id="output"></div>
+  <main class="app">
+    <header class="header">
+      <div class="stat"><span class="value" id="accuracy">—</span><span class="label">accuracy</span></div>
+      <div class="stat"><span class="value" id="streak">0</span><span class="label">streak</span></div>
+      <div class="stat"><span class="value" id="total">0</span><span class="label">hands</span></div>
+    </header>
 
-  <script type="module">
-    import { getOptimalAction, classifyHand, isPair } from './js/strategy.js';
-    import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './js/strategy-table.js';
+    <section class="table">
+      <div class="zone dealer">
+        <div class="zone-label">Dealer</div>
+        <div class="cards" id="dealer-cards"></div>
+      </div>
+      <div class="zone player">
+        <div class="zone-label" id="hand-label">—</div>
+        <div class="cards" id="player-cards"></div>
+      </div>
+    </section>
 
-    // --- Tiny harness ---
-    const results = [];
-    let currentGroup = '';
+    <footer class="footer">
+      <div class="feedback-slot">
+        <div class="feedback" id="feedback" hidden></div>
+      </div>
+      <div class="actions" id="actions"></div>
+    </footer>
+  </main>
 
-    function describe(name, fn) {
-      const prev = currentGroup;
-      currentGroup = name;
-      fn();
-      currentGroup = prev;
-    }
-    function it(name, fn) {
-      try {
-        fn();
-        results.push({ group: currentGroup, name, pass: true });
-      } catch (e) {
-        results.push({ group: currentGroup, name, pass: false, err: e.message });
-      }
-    }
-    function assertEqual(actual, expected, msg) {
-      if (actual !== expected) {
-        const prefix = msg ? msg + ': ' : '';
-        throw new Error(`${prefix}expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-      }
-    }
-    function assert(cond, msg) {
-      if (!cond) throw new Error(msg || 'assertion failed');
-    }
-
-    // --- Hand builders ---
-    function makeHardHand(total) {
-      // Return a 2-card non-pair non-ace hand for totals 5..19. For 20 fall back to 3 cards
-      // (since two non-equal cards ≤10 can't sum to 20). Hard 20 cells are all S, so the
-      // 3-card limitation doesn't affect the expected action.
-      if (total === 20) return [2, 8, 10];
-      for (let lo = 2; lo < total - lo; lo++) {
-        const hi = total - lo;
-        if (hi <= 10 && lo !== hi) return [lo, hi];
-      }
-      throw new Error(`no hard hand for total ${total}`);
-    }
-    function makeSoftHand(total) { return [11, total - 11]; }
-    function makePairHand(rank) { return rank === 'A' ? [11, 11] : [Number(rank), Number(rank)]; }
-
-    function upcardLabel(u) { return u === 11 ? 'A' : String(u); }
-
-    // Mirror of resolveCell in strategy.js — used only for the chart-sweep expected values.
-    function resolveExpected(cell, handSize, lateSurrender) {
-      const canAct = handSize === 2;
-      if (cell === 'D')  return canAct ? 'D' : 'H';
-      if (cell === 'Ds') return canAct ? 'D' : 'S';
-      if (cell === 'R')  return (canAct && lateSurrender) ? 'R' : 'H';
-      return cell;
-    }
-
-    // ========== classifyHand / isPair ==========
-    describe('classifyHand / isPair', () => {
-      it('hard total, no aces', () => {
-        const c = classifyHand([7, 9]);
-        assertEqual(c.type, 'hard'); assertEqual(c.total, 16);
-      });
-      it('soft total, one ace', () => {
-        const c = classifyHand([11, 6]);
-        assertEqual(c.type, 'soft'); assertEqual(c.total, 17);
-      });
-      it('two equal cards → pair', () => {
-        assertEqual(classifyHand([8, 8]).type, 'pair');
-      });
-      it('three cards summing pair-like → not pair', () => {
-        assertEqual(classifyHand([8, 4, 4]).type, 'hard');
-        assertEqual(isPair([8, 8, 2]), false);
-      });
-      it('A,A → pair, total 22', () => {
-        const c = classifyHand([11, 11]);
-        assertEqual(c.type, 'pair'); assertEqual(c.total, 22);
-      });
-      it('soft demotes to hard when bust threatened', () => {
-        const c = classifyHand([11, 5, 7]); // 23 → 13 hard
-        assertEqual(c.type, 'hard'); assertEqual(c.total, 13);
-      });
-      it('multi-ace soft (one ace stays at 11)', () => {
-        const c = classifyHand([11, 11, 5]); // 27 → 17 soft
-        assertEqual(c.type, 'soft'); assertEqual(c.total, 17);
-      });
-      it('isPair true for [7,7]',   () => assertEqual(isPair([7, 7]), true));
-      it('isPair false for [7,8]',  () => assertEqual(isPair([7, 8]), false));
-      it('isPair false for 3 cards', () => assertEqual(isPair([5, 5, 5]), false));
-    });
-
-    // ========== Chart sweep: hard totals ==========
-    describe('hard totals — chart sweep', () => {
-      const totals = Object.keys(hardTotals).map(Number).sort((a, b) => a - b);
-      for (const total of totals) {
-        const hand = makeHardHand(total);
-        DEALER_UPCARDS.forEach((upcard, i) => {
-          const cell = hardTotals[total][i];
-          const expected = resolveExpected(cell, hand.length, true);
-          it(`hard ${total} vs ${upcardLabel(upcard)} — hand ${JSON.stringify(hand)}, cell ${cell}, expect ${expected}`, () => {
-            assertEqual(getOptimalAction(hand, upcard), expected);
-          });
-        });
-      }
-    });
-
-    // ========== Chart sweep: soft totals ==========
-    describe('soft totals — chart sweep', () => {
-      const totals = Object.keys(softTotals).map(Number).sort((a, b) => a - b);
-      for (const total of totals) {
-        const hand = makeSoftHand(total);
-        DEALER_UPCARDS.forEach((upcard, i) => {
-          const cell = softTotals[total][i];
-          const expected = resolveExpected(cell, hand.length, true);
-          it(`soft ${total} (A,${total - 11}) vs ${upcardLabel(upcard)} — cell ${cell}, expect ${expected}`, () => {
-            assertEqual(getOptimalAction(hand, upcard), expected);
-          });
-        });
-      }
-    });
-
-    // ========== Chart sweep: pairs ==========
-    describe('pairs — chart sweep', () => {
-      for (const rank of Object.keys(pairs)) {
-        const hand = makePairHand(rank);
-        DEALER_UPCARDS.forEach((upcard, i) => {
-          const cell = pairs[rank][i];
-          const expected = resolveExpected(cell, 2, true);
-          it(`pair ${rank},${rank} vs ${upcardLabel(upcard)} — cell ${cell}, expect ${expected}`, () => {
-            assertEqual(getOptimalAction(hand, upcard), expected);
-          });
-        });
-      }
-    });
-
-    // ========== Edge cases from the spec ==========
-    describe('edge cases — pairs', () => {
-      DEALER_UPCARDS.forEach(u => {
-        it(`A,A vs ${upcardLabel(u)} → P`, () => assertEqual(getOptimalAction([11, 11], u), 'P'));
-      });
-      it('8,8 vs 10 → P', () => assertEqual(getOptimalAction([8, 8], 10), 'P'));
-      it('8,8 vs A  → P', () => assertEqual(getOptimalAction([8, 8], 11), 'P'));
-      for (let u = 2; u <= 9; u++) {
-        it(`5,5 vs ${u} → D (treat as hard 10)`, () => assertEqual(getOptimalAction([5, 5], u), 'D'));
-      }
-      it('5,5 vs 10 → H', () => assertEqual(getOptimalAction([5, 5], 10), 'H'));
-      it('5,5 vs A  → H', () => assertEqual(getOptimalAction([5, 5], 11), 'H'));
-      DEALER_UPCARDS.forEach(u => {
-        it(`10,10 vs ${upcardLabel(u)} → S`, () => assertEqual(getOptimalAction([10, 10], u), 'S'));
-      });
-    });
-
-    describe('edge cases — soft hands', () => {
-      it('soft 18 (A,7) vs 9  → H (common error: standing)', () => assertEqual(getOptimalAction([11, 7], 9), 'H'));
-      it('soft 18 (A,7) vs 10 → H', () => assertEqual(getOptimalAction([11, 7], 10), 'H'));
-      it('soft 18 (A,7) vs A  → H', () => assertEqual(getOptimalAction([11, 7], 11), 'H'));
-      DEALER_UPCARDS.forEach(u => {
-        it(`soft 17 (A,6) vs ${upcardLabel(u)} ≠ S`, () => {
-          const a = getOptimalAction([11, 6], u);
-          assert(a !== 'S', `got S for soft 17 vs ${upcardLabel(u)}`);
-        });
-      });
-    });
-
-    describe('edge cases — hard totals & surrender', () => {
-      it('hard 16 vs 10 → R', () => assertEqual(getOptimalAction([10, 6], 10), 'R'));
-      it('hard 16 vs 9  → R', () => assertEqual(getOptimalAction([10, 6], 9), 'R'));
-      it('hard 16 vs A  → H (S17, no surrender)', () => assertEqual(getOptimalAction([10, 6], 11), 'H'));
-      it('hard 15 vs 10 → R', () => assertEqual(getOptimalAction([10, 5], 10), 'R'));
-      it('hard 15 vs A  → H (S17, no surrender)', () => assertEqual(getOptimalAction([10, 5], 11), 'H'));
-      it('hard 12 vs 2 → H (common error: standing)', () => assertEqual(getOptimalAction([4, 8], 2), 'H'));
-      it('hard 12 vs 3 → H', () => assertEqual(getOptimalAction([4, 8], 3), 'H'));
-    });
-
-    describe('edge cases — doubling and surrender restricted to 2-card hands', () => {
-      it('2-card 11 vs 2..10 → D', () => {
-        for (let u = 2; u <= 10; u++) {
-          assertEqual(getOptimalAction([5, 6], u), 'D', `dealer ${u}`);
-        }
-      });
-      it('2-card 11 vs A → H (S17)', () => assertEqual(getOptimalAction([5, 6], 11), 'H'));
-      it('3-card hard 11 vs 6 → H, NOT D', () => assertEqual(getOptimalAction([2, 4, 5], 6), 'H'));
-      it('3-card soft 18 vs 4 → S (Ds resolves to S without 2-card)', () => {
-        // 2 + 5 + A = 18 soft
-        assertEqual(getOptimalAction([2, 5, 11], 4), 'S');
-      });
-      it('3-card hard 16 vs 10 → H, NOT R', () => assertEqual(getOptimalAction([6, 4, 6], 10), 'H'));
-      it('3-card hard 16 vs 9  → H, NOT R', () => assertEqual(getOptimalAction([6, 4, 6], 9), 'H'));
-    });
-
-    describe('edge cases — rules parameter', () => {
-      it('LS off → hard 16 vs 10 → H', () => {
-        assertEqual(getOptimalAction([10, 6], 10, { lateSurrender: false }), 'H');
-      });
-      it('rules omitted → defaults apply (LS on)', () => {
-        assertEqual(getOptimalAction([10, 6], 10), 'R');
-      });
-      it('total >= 21 always stands (hard 21)', () => assertEqual(getOptimalAction([5, 6, 10], 10), 'S'));
-      it('total >= 21 always stands (soft 21)', () => assertEqual(getOptimalAction([11, 5, 5], 6), 'S'));
-    });
-
-    // Spot checks: hardcoded against reference-chart.md (one cell per chart section).
-    // These are the canonical "human read the markdown" anchors.
-    describe('spot checks vs reference-chart.md', () => {
-      it('hard 16 vs 10 = R', () => assertEqual(getOptimalAction([10, 6], 10), 'R'));
-      it('soft 18 vs 3 = D (cell Ds, 2-card)', () => assertEqual(getOptimalAction([11, 7], 3), 'D'));
-      it('pair 9,9 vs 7 = S', () => assertEqual(getOptimalAction([9, 9], 7), 'S'));
-    });
-
-    // --- Render ---
-    function render() {
-      const out = document.getElementById('output');
-      const passed = results.filter(r => r.pass).length;
-      const total = results.length;
-      const allPass = passed === total;
-
-      const summary = document.createElement('div');
-      summary.className = 'summary ' + (allPass ? 'pass' : 'fail');
-      summary.textContent = `${passed} / ${total} passed`;
-      out.appendChild(summary);
-
-      const groups = {};
-      for (const r of results) {
-        if (!groups[r.group]) groups[r.group] = [];
-        groups[r.group].push(r);
-      }
-      for (const group of Object.keys(groups)) {
-        const rows = groups[group];
-        const groupPassed = rows.filter(r => r.pass).length;
-        const h = document.createElement('h2');
-        h.textContent = `${group} — ${groupPassed} / ${rows.length}`;
-        out.appendChild(h);
-
-        const failures = rows.filter(r => !r.pass);
-        if (failures.length === 0) {
-          const ok = document.createElement('div');
-          ok.className = 'test pass';
-          ok.textContent = `PASS · all ${rows.length} tests`;
-          out.appendChild(ok);
-        } else {
-          for (const r of failures) {
-            const d = document.createElement('div');
-            d.className = 'test fail';
-            d.textContent = `FAIL · ${r.name}`;
-            out.appendChild(d);
-            const e = document.createElement('div');
-            e.className = 'err';
-            e.textContent = r.err;
-            out.appendChild(e);
-          }
-        }
-      }
-    }
-    render();
-  </script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
