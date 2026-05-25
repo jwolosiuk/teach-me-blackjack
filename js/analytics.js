@@ -19,7 +19,7 @@ const CATEGORY_INFO = {
     subTypes: ['hard', 'soft'],
   },
   adjust: {
-    label: '2A. Adjustments',
+    label: '2E. Adjustments',
     desc: 'The narrow exceptions where both mimic and the bust-card rule are wrong: only soft 18 (A,7) vs dealer 9, 10, or A — all three are hit, both rules say stand.',
     subTypes: ['hard', 'soft'],
   },
@@ -34,7 +34,7 @@ const CATEGORY_INFO = {
     subTypes: [],
   },
   surrender: {
-    label: '2C. Surrenders',
+    label: '2D. Surrenders',
     desc: 'Hard 16 vs 9 / 10 / A and hard 15 vs 10 — half-unit refund beats playing the hand.',
     subTypes: [],
   },
