@@ -3,6 +3,7 @@ import { legalActions, evaluateAction } from './evaluator.js';
 import { classifyHand, strategyDependsOnUpcard, classifyDecision } from './strategy.js';
 import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats, migrateStats } from './stats.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
+import { renderAnalytics } from './analytics.js';
 import * as play from './play.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true, numDecks: 6 };
@@ -211,6 +212,7 @@ function renderPracticeStats() {
   $('stat-1').textContent = acc === null ? '—' : `${Math.round(acc * 100)}%`;
   $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
   $('stat-3').textContent = String(practiceStats.total);
+  renderAnalytics($('analytics'), practiceStats);
   persist();
 }
 
@@ -254,6 +256,7 @@ function renderPlayStats() {
   const evl = avgEvLoss(playStats);
   $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
   $('stat-3').textContent = String(playStats.hands);
+  renderAnalytics($('analytics'), playStats);
   persist();
 }
 

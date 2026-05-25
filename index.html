@@ -31,8 +31,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      overscroll-behavior: none;
+      overscroll-behavior-x: none;
     }
 
     body {
@@ -40,8 +39,6 @@
       background: var(--bg);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
-      user-select: none;
-      -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -53,12 +50,14 @@
       max-width: 480px;
       margin: 0 auto;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* ---------- mode tabs ---------- */
     .mode-tabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 4px;
       padding: 10px 24px 0;
     }
@@ -345,6 +344,126 @@
       font-family: ui-monospace, "SF Mono", Menlo, monospace;
       opacity: 0.6;
     }
+
+    /* ---------- analytics (below the fold) ---------- */
+    .scroll-hint {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.5;
+      padding: 14px 0 6px;
+    }
+    .scroll-hint::after { content: ' ▾'; }
+
+    .analytics {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 8px 24px 48px;
+      line-height: 1.5;
+      font-size: 14.5px;
+    }
+    .analytics-title {
+      font-size: 16px;
+      margin: 18px 0 10px;
+      letter-spacing: -0.01em;
+    }
+    .analytics-empty {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .analytics-overall {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 10px;
+      margin-bottom: 12px;
+    }
+    .analytics-overall .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .analytics-overall .value {
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+    .analytics-overall .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .cat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .cat-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .cat-row.good { border-left-color: var(--good); }
+    .cat-row.warn { border-left-color: var(--warn); }
+    .cat-row.bad  { border-left-color: var(--bad); }
+    .cat-row.neutral { border-left-color: var(--border); }
+    .cat-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .cat-name {
+      font-weight: 600;
+      font-size: 14.5px;
+    }
+    .cat-stats { display: flex; gap: 14px; }
+    .cat-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .cat-stat .num {
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .cat-row.good .cat-stat:nth-child(2) .num,
+    .cat-row.good .cat-stat:nth-child(3) .num { color: var(--good); }
+    .cat-row.warn .cat-stat:nth-child(2) .num,
+    .cat-row.warn .cat-stat:nth-child(3) .num { color: var(--warn); }
+    .cat-row.bad  .cat-stat:nth-child(2) .num,
+    .cat-row.bad  .cat-stat:nth-child(3) .num { color: var(--bad); }
+    .cat-stat .lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .cat-desc {
+      margin: 8px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
   </style>
 </head>
 <body>
@@ -353,7 +472,6 @@
       <button class="mode-tab active" type="button" data-mode="practice">Practice</button>
       <button class="mode-tab" type="button" data-mode="play">Play</button>
       <a class="mode-tab" href="concepts.html">Learn</a>
-      <a class="mode-tab" href="analytics.html">Stats</a>
     </nav>
 
     <header class="header">
@@ -379,8 +497,11 @@
       </div>
       <div class="actions" id="actions"></div>
       <div class="version-stamp">—</div>
+      <div class="scroll-hint">stats</div>
     </footer>
   </main>
+
+  <section class="analytics" id="analytics"></section>
 
   <script type="module" src="js/app.js"></script>
   <script type="module" src="js/version.js"></script>

@@ -1,11 +1,10 @@
-// Analytics page: pull persisted stats from localStorage, aggregate practice +
-// play per rule category, and render a breakdown so the user can see which
-// rule they're weakest at.
+// Per-rule-category breakdown of decision quality. Used by the main app
+// (practice and play tabs) — pass in the stats object for the active mode
+// and the analytics renders into the given root element.
+//
+// Categories come from strategy.classifyDecision and are mutually exclusive.
 
-import { migrateStats } from './stats.js';
 import { RULE_CATEGORIES } from './strategy.js';
-
-const STORAGE_KEY = 'blackjack-trainer:v1';
 
 const CATEGORY_INFO = {
   basic: {
@@ -30,32 +29,14 @@ const CATEGORY_INFO = {
   },
 };
 
-function loadStats() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { practice: null, play: null };
-    const data = JSON.parse(raw);
-    return {
-      practice: migrateStats(data.practice ?? null),
-      play: migrateStats(data.play ?? null),
-    };
-  } catch {
-    return { practice: null, play: null };
-  }
-}
-
-function combineByCategory(...statsObjects) {
+function readByCategory(stats) {
   const out = {};
   for (const c of RULE_CATEGORIES) out[c] = { total: 0, correct: 0, cost: 0 };
-  for (const s of statsObjects) {
-    if (!s?.byCategory) continue;
-    for (const c of RULE_CATEGORIES) {
-      const src = s.byCategory[c];
-      if (!src) continue;
-      out[c].total += src.total;
-      out[c].correct += src.correct;
-      out[c].cost += src.cost;
-    }
+  if (!stats?.byCategory) return out;
+  for (const c of RULE_CATEGORIES) {
+    const src = stats.byCategory[c];
+    if (!src) continue;
+    out[c] = { total: src.total, correct: src.correct, cost: src.cost };
   }
   return out;
 }
@@ -84,8 +65,7 @@ function evText(cost, total) {
 
 // Heuristic tone for the row: red when EV loss is high, green when low,
 // neutral when sample is too small to judge.
-function tone(category) {
-  const { total, correct, cost } = category;
+function tone({ total, correct, cost }) {
   if (total < 5) return 'neutral';
   const avgLoss = cost / total;
   const acc = correct / total;
@@ -94,61 +74,51 @@ function tone(category) {
   return 'warn';
 }
 
-function render() {
-  const { practice, play } = loadStats();
-  const byCat = combineByCategory(practice, play);
+function escapeHtml(s) {
+  return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+
+export function renderAnalytics(root, stats) {
+  const byCat = readByCategory(stats);
   const all = overall(byCat);
 
-  const $ = id => document.getElementById(id);
-
   if (all.total === 0) {
-    $('empty').hidden = false;
-    $('content').hidden = true;
+    root.innerHTML = `<div class="analytics-empty">No decisions yet — play a few hands to see your stats here.</div>`;
     return;
   }
-  $('empty').hidden = true;
-  $('content').hidden = false;
 
-  $('overall-total').textContent = String(all.total);
-  $('overall-acc').textContent = pctText(all.correct, all.total);
-  $('overall-ev').textContent = evText(all.cost, all.total);
-
-  const sub = (k, l) => {
-    const s = k === 'practice' ? practice : play;
-    const ov = s ? overall(s.byCategory ?? {}) : { total: 0, correct: 0, cost: 0 };
-    $(`${k}-total`).textContent = String(ov.total);
-    $(`${k}-acc`).textContent = pctText(ov.correct, ov.total);
-    $(`${k}-ev`).textContent = evText(ov.cost, ov.total);
-  };
-  sub('practice');
-  sub('play');
-
-  const tbody = $('cat-rows');
-  tbody.innerHTML = '';
-  // Rank rows by EV loss desc so the worst category bubbles to the top.
+  // Worst category bubbles to the top so the user sees what to work on.
   const rows = RULE_CATEGORIES.map(c => ({
-    key: c,
     info: CATEGORY_INFO[c],
     data: byCat[c],
     avgLoss: byCat[c].total === 0 ? -1 : byCat[c].cost / byCat[c].total,
   })).sort((a, b) => b.avgLoss - a.avgLoss);
 
-  for (const { key, info, data } of rows) {
-    const row = document.createElement('div');
-    row.className = `cat-row ${tone(data)}`;
-    row.innerHTML = `
+  const overallHtml = `
+    <div class="analytics-overall">
+      <div class="cell"><span class="value">${all.total}</span><span class="label">decisions</span></div>
+      <div class="cell"><span class="value">${pctText(all.correct, all.total)}</span><span class="label">accuracy</span></div>
+      <div class="cell"><span class="value">${evText(all.cost, all.total)}</span><span class="label">ev loss</span></div>
+    </div>
+  `;
+
+  const rowsHtml = rows.map(({ info, data }) => `
+    <div class="cat-row ${tone(data)}">
       <div class="cat-head">
-        <span class="cat-name">${info.label}</span>
+        <span class="cat-name">${escapeHtml(info.label)}</span>
         <span class="cat-stats">
           <span class="cat-stat"><span class="num">${data.total}</span><span class="lbl">hands</span></span>
           <span class="cat-stat"><span class="num">${pctText(data.correct, data.total)}</span><span class="lbl">acc</span></span>
           <span class="cat-stat"><span class="num">${evText(data.cost, data.total)}</span><span class="lbl">ev loss</span></span>
         </span>
       </div>
-      <p class="cat-desc">${info.desc}</p>
-    `;
-    tbody.appendChild(row);
-  }
-}
+      <p class="cat-desc">${escapeHtml(info.desc)}</p>
+    </div>
+  `).join('');
 
-render();
+  root.innerHTML = `
+    <h2 class="analytics-title">By rule category</h2>
+    ${overallHtml}
+    <div class="cat-list">${rowsHtml}</div>
+  `;
+}
