@@ -71,10 +71,15 @@ const ALL_SUB_TYPES = ['hard', 'soft', 'pair', 'always', 'mixed'];
 
 function readCategory(stats, key) {
   const src = stats?.byCategory?.[key];
-  const empty = { total: 0, correct: 0, cost: 0 };
   const byType = {};
   for (const t of ALL_SUB_TYPES) {
-    byType[t] = { ...empty, ...(src?.byType?.[t] ?? {}) };
+    const srcT = src?.byType?.[t] ?? {};
+    byType[t] = {
+      total: srcT.total ?? 0,
+      correct: srcT.correct ?? 0,
+      cost: srcT.cost ?? 0,
+      recent: Array.isArray(srcT.recent) ? srcT.recent : [],
+    };
   }
   return {
     total: src?.total ?? 0,
@@ -82,6 +87,27 @@ function readCategory(stats, key) {
     cost: src?.cost ?? 0,
     byType,
   };
+}
+
+// Avg cost in a bucket's rolling window — what the practice sampler actually
+// reads. Returns null when the window is empty so callers can show "—".
+function bucketRollingLoss(b) {
+  if (!b?.recent || b.recent.length === 0) return null;
+  let sum = 0;
+  for (const r of b.recent) sum += r.cost;
+  return sum / b.recent.length;
+}
+
+// Category-level rolling loss: pool the recent windows across all sub-buckets
+// and average. Empty pool → null.
+function categoryRollingLoss(byTypeData) {
+  let sum = 0, count = 0;
+  for (const t of ALL_SUB_TYPES) {
+    const r = byTypeData[t].recent;
+    if (!r) continue;
+    for (const entry of r) { sum += entry.cost; count++; }
+  }
+  return count === 0 ? null : sum / count;
 }
 
 function overall(byCats) {
@@ -139,13 +165,20 @@ function adjText(d, freq) {
   return adj.toFixed(3);
 }
 
-function statsHtml(d, freq) {
+function rollingText(rolling) {
+  if (rolling === null || rolling === undefined) return '—';
+  if (rolling < 0.0005) return '0.000';
+  return rolling.toFixed(3);
+}
+
+function statsHtml(d, freq, rolling) {
   return `
     <span class="cat-stats">
       <span class="cat-stat cat-stat-meta"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
       <span class="cat-stat"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev loss</span></span>
       <span class="cat-stat"><span class="num">${adjText(d, freq)}</span><span class="lbl">adj</span></span>
+      <span class="cat-stat"><span class="num">${rollingText(rolling)}</span><span class="lbl">rolling</span></span>
     </span>
   `;
 }
@@ -158,6 +191,7 @@ function subRowsHtml(byType, types, freqByType) {
   return types.map(t => {
     const d = byType[t];
     const freq = freqByType?.[t] ?? 0;
+    const rolling = bucketRollingLoss(d);
     return `
       <div class="cat-sub ${tone(d)}">
         <div class="cat-head">
@@ -165,7 +199,7 @@ function subRowsHtml(byType, types, freqByType) {
             <span class="sub-name">${TYPE_LABEL[t]}</span>
             ${freqBadge(freq)}
           </span>
-          ${statsHtml(d, freq)}
+          ${statsHtml(d, freq, rolling)}
         </div>
       </div>
     `;
@@ -178,13 +212,14 @@ function categoryHtml(key, data) {
   const t = tone(data);
   const expandable = info.subTypes.length > 0;
   const isOpen = expanded(key);
+  const rolling = categoryRollingLoss(data.byType);
   const headInner = `
     <div class="cat-head">
       <span class="cat-name-group">
         <span class="cat-name">${escapeHtml(info.label)}${expandable ? '<span class="chev">▸</span>' : ''}</span>
         ${freqBadge(freqEntry.total)}
       </span>
-      ${statsHtml(data, freqEntry.total)}
+      ${statsHtml(data, freqEntry.total, rolling)}
     </div>
     <div class="cat-desc">${escapeHtml(info.desc)}</div>
   `;
@@ -204,30 +239,34 @@ function expanded(key) {
 }
 
 // sortBy:
-//   'adj' (default, used by play) — per-decision cost weighted by theoretical
-//          frequency, i.e. what's actually costing the player the most in a
-//          real game.
-//   'ev'  (used by practice)      — raw per-decision ev loss, so the bucket
-//          the player is worst at bubbles to the top regardless of how often
-//          it comes up. Better signal for what to drill on.
+//   'adj'     (default, play)     — per-decision cost weighted by theoretical
+//                                   frequency. What's costing in a real game.
+//   'ev'                          — lifetime cost / total. Worst-overall bucket.
+//   'rolling' (practice)          — same metric the practice sampler uses:
+//                                   avg cost from each bucket's rolling window.
+//                                   What's being targeted right now.
 export function renderAnalytics(root, stats, { sortBy = 'adj' } = {}) {
   const byCats = {};
   for (const c of RULE_CATEGORIES) byCats[c] = readCategory(stats, c);
   const all = overall(byCats);
 
-  // No data → fall back to Learn-page order (the order RULE_CATEGORIES is
-  // declared in). With data, sort by ev loss or adj depending on the mode;
-  // buckets that still have no data tie at -1 and (thanks to Array.sort
-  // being stable since ES2019) keep their Learn order at the bottom.
-  const ordered = RULE_CATEGORIES.map(c => ({
-    key: c,
-    data: byCats[c],
-    weight: byCats[c].total === 0
-      ? -1
-      : sortBy === 'ev'
-        ? (byCats[c].cost / byCats[c].total)
-        : (byCats[c].cost / byCats[c].total) * CATEGORY_FREQ[c].total,
-  })).sort((a, b) => b.weight - a.weight);
+  // No data → fall back to Learn-page order. With data, sort buckets; empty
+  // ones tie at -1 and (stable sort since ES2019) keep Learn order at bottom.
+  const ordered = RULE_CATEGORIES.map(c => {
+    const d = byCats[c];
+    let weight;
+    if (sortBy === 'rolling') {
+      const r = categoryRollingLoss(d.byType);
+      weight = r === null ? -1 : r;
+    } else if (d.total === 0) {
+      weight = -1;
+    } else if (sortBy === 'ev') {
+      weight = d.cost / d.total;
+    } else {
+      weight = (d.cost / d.total) * CATEGORY_FREQ[c].total;
+    }
+    return { key: c, data: d, weight };
+  }).sort((a, b) => b.weight - a.weight);
 
   const overallHtml = `
     <div class="analytics-overall">

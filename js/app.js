@@ -239,7 +239,7 @@ function renderPracticeStats() {
   $('stat-1').textContent = acc === null ? '—' : `${Math.round(acc * 100)}%`;
   $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
   $('stat-3').textContent = String(practiceStats.total);
-  renderAnalytics($('analytics'), practiceStats, { sortBy: 'ev' });
+  renderAnalytics($('analytics'), practiceStats, { sortBy: 'rolling' });
   persist();
 }
 
