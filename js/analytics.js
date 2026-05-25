@@ -9,32 +9,32 @@ import { RULE_CATEGORIES } from './strategy.js';
 
 const CATEGORY_INFO = {
   mimic: {
-    label: 'Mimic the dealer',
+    label: '1. Mimic the dealer',
     desc: 'Hit below 17, stand at 17+. The dumbest strategy already gets these right — including 11 vs A and 12 vs 2–3.',
     subTypes: ['hard', 'soft'],
   },
   hardTotals: {
-    label: 'Hard totals',
+    label: '2A. Hard totals',
     desc: 'Mimic is wrong but the basic rule fixes it. Hard 12–16 stands vs dealer 2–6 (mimic hits and busts). Soft 17 (A,6) hits vs 2 and vs 7–A (mimic stands on it because it\'s ≥17, but it\'s still a draw-once hand worth improving).',
     subTypes: ['hard', 'soft'],
   },
   adjust: {
-    label: 'Adjustments',
+    label: '2A. Adjustments',
     desc: 'The narrow exceptions where both mimic and the bust-card rule are wrong: only soft 18 (A,7) vs dealer 9, 10, or A — all three are hit, both rules say stand.',
     subTypes: ['hard', 'soft'],
   },
   double: {
-    label: 'Doubles',
+    label: '2B. Doubles',
     desc: 'Two-card non-pair hands where doubling is optimal: hard 9 vs 3–6, hard 10 vs 2–9, hard 11 vs 2–10, plus soft 13–18 vs the right upcards.',
     subTypes: ['hard', 'soft'],
   },
   split: {
-    label: 'Splits',
+    label: '2C. Splits',
     desc: 'Any pair situation — when to split and when not to. Always split A,A and 8,8; never split 5,5 or 10,10; the rest depends on the upcard.',
     subTypes: [],
   },
   surrender: {
-    label: 'Surrenders',
+    label: '2C. Surrenders',
     desc: 'Hard 16 vs 9 / 10 / A and hard 15 vs 10 — half-unit refund beats playing the hand.',
     subTypes: [],
   },
