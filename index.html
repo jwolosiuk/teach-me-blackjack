@@ -512,16 +512,35 @@
 <body>
   <main class="app">
     <nav class="mode-tabs">
-      <button class="mode-tab active" type="button" data-mode="practice">Practice</button>
+      <button class="mode-tab" type="button" data-mode="practice">Practice</button>
       <button class="mode-tab" type="button" data-mode="play">Play</button>
       <a class="mode-tab" href="concepts.html">Learn</a>
     </nav>
 
     <header class="header">
-      <div class="stat"><span class="value" id="stat-1">—</span><span class="label">accuracy</span></div>
-      <div class="stat"><span class="value" id="stat-2">0</span><span class="label">streak</span></div>
-      <div class="stat"><span class="value" id="stat-3">0</span><span class="label">hands</span></div>
+      <div class="stat"><span class="value" id="stat-1">—</span><span class="label"></span></div>
+      <div class="stat"><span class="value" id="stat-2">0</span><span class="label"></span></div>
+      <div class="stat"><span class="value" id="stat-3">0</span><span class="label"></span></div>
     </header>
+    <script>
+      // Pre-paint setup: pick the right tab and stat labels from localStorage
+      // BEFORE the rest of the body renders, so returning from Learn in
+      // 'play' state doesn't flash Practice first.
+      (() => {
+        let mode = 'practice';
+        try {
+          const m = JSON.parse(localStorage.getItem('blackjack-trainer:v1') || '{}').mode;
+          if (m === 'play') mode = 'play';
+        } catch {}
+        document.querySelector(`.mode-tab[data-mode="${mode}"]`)?.classList.add('active');
+        const labels = mode === 'play'
+          ? ['net', 'ev loss', 'hands']
+          : ['accuracy', 'ev loss', 'hands'];
+        document.querySelectorAll('.header .stat .label').forEach((el, i) => {
+          el.textContent = labels[i];
+        });
+      })();
+    </script>
 
     <section class="table">
       <div class="zone dealer">
