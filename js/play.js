@@ -147,10 +147,9 @@ function advance() {
       return;
     }
   }
-  // No live decisions left — reveal and play dealer
+  // No live decisions left — reveal dealer; player taps to settle
   game.phase = 'reveal';
   render();
-  pendingTimeout = setTimeout(resolve, 500);
 }
 
 function resolve() {
@@ -196,6 +195,7 @@ function settle() {
 }
 
 function maybeAdvanceOnTap() {
+  if (game?.phase === 'reveal') { resolve(); return; }
   if (game?.phase === 'result' && feedbackReady) deal();
 }
 

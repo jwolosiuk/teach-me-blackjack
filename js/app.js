@@ -1,7 +1,7 @@
 import { dealSituation } from './deal.js';
 import { legalActions, evaluateAction } from './evaluator.js';
 import { classifyHand, strategyDependsOnUpcard } from './strategy.js';
-import { createStats, updateStats, efficiency, createPlayStats, winPercent } from './stats.js';
+import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats, winPercent } from './stats.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
 import * as play from './play.js';
 
@@ -19,7 +19,7 @@ const modes = {
     activate: activatePractice,
     deactivate: deactivatePractice,
     renderStats: renderPracticeStats,
-    statLabels: ['accuracy', 'streak', 'hands'],
+    statLabels: ['accuracy', 'ev loss', 'streak'],
   },
   play: {
     activate: () => play.activate(playStats, renderPlayStats),
@@ -205,10 +205,11 @@ function hideFeedback() {
 }
 
 function renderPracticeStats() {
-  const eff = efficiency(practiceStats);
-  $('stat-1').textContent = eff === null ? '—' : `${Math.round(eff * 100)}%`;
-  $('stat-2').textContent = String(practiceStats.streak);
-  $('stat-3').textContent = String(practiceStats.total);
+  const acc = accuracy(practiceStats);
+  const evl = avgEvLoss(practiceStats);
+  $('stat-1').textContent = acc === null ? '—' : `${Math.round(acc * 100)}%`;
+  $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
+  $('stat-3').textContent = String(practiceStats.streak);
   persist();
 }
 
