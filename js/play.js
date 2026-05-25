@@ -359,7 +359,14 @@ export function activate(playStats, statsChangeCb) {
   onStatsChange = statsChangeCb;
   docClickListener = maybeAdvanceOnTap;
   document.addEventListener('click', docClickListener);
-  deal();
+  if (game) {
+    // Resume the hand the user left mid-decision (or the result banner
+    // they hadn't tapped past yet).
+    if (game.phase === 'result') feedbackReady = true;
+    render();
+  } else {
+    deal();
+  }
 }
 
 export function deactivate() {
@@ -368,5 +375,6 @@ export function deactivate() {
     document.removeEventListener('click', docClickListener);
     docClickListener = null;
   }
-  game = null;
+  // Keep `game` so re-entering this tab resumes the hand instead of dealing a
+  // fresh one. The shoe is module-level too, so card draws stay consistent.
 }

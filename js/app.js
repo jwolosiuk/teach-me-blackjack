@@ -95,6 +95,7 @@ function switchMode(name) {
 // ---------- practice mode (single-decision training) ----------
 
 let current = null;
+let currentResult = null; // last decision's result, kept so feedback survives tab switches
 let pState = 'awaiting'; // 'awaiting' | 'feedback'
 let pPendingAdvance = null;
 let pFeedbackReady = false;
@@ -104,6 +105,7 @@ function deal() {
   cancelAdvance();
   pState = 'awaiting';
   pFeedbackReady = false;
+  currentResult = null;
   current = dealSituation();
   current.display = {
     player: buildDisplay(current.hand),
@@ -168,13 +170,13 @@ function handleDecision(action, e) {
   if (pState !== 'awaiting') return;
   e.stopPropagation();
   pState = 'feedback';
-  const result = evaluateAction({ hand: current.hand, upcard: current.upcard, action, rules: RULES });
-  const category = classifyDecision(current.hand, current.upcard, result.optimal);
-  updateStats(practiceStats, { result, type: current.type, category });
-  showFeedback(result);
+  currentResult = evaluateAction({ hand: current.hand, upcard: current.upcard, action, rules: RULES });
+  const category = classifyDecision(current.hand, current.upcard, currentResult.optimal);
+  updateStats(practiceStats, { result: currentResult, type: current.type, category });
+  showFeedback(currentResult);
   renderPracticeStats();
   setTimeout(() => { pFeedbackReady = true; }, 120);
-  if (result.correct) pPendingAdvance = setTimeout(advance, 850);
+  if (currentResult.correct) pPendingAdvance = setTimeout(advance, 850);
 }
 
 function showFeedback(result) {
@@ -236,7 +238,19 @@ function maybeAdvanceOnTap() {
 function activatePractice() {
   pDocClick = maybeAdvanceOnTap;
   document.addEventListener('click', pDocClick);
-  deal();
+  if (current) {
+    // Resume the situation that was on screen when the user last left this tab.
+    renderSituation();
+    renderActions();
+    if (pState === 'feedback' && currentResult) {
+      showFeedback(currentResult);
+      pFeedbackReady = true;     // tap immediately to advance
+    } else {
+      hideFeedback();
+    }
+  } else {
+    deal();
+  }
 }
 
 function deactivatePractice() {
