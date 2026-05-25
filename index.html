@@ -43,7 +43,10 @@
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      /* pan-y everywhere: vertical scroll belongs to the browser, horizontal
+         gestures are ours to interpret as tab swipes — so the swipe works
+         on .app, on the analytics list, on every category row. */
+      touch-action: pan-y;
     }
 
     .app {
@@ -59,10 +62,6 @@
       padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
       user-select: none;
       -webkit-user-select: none;
-      /* pan-y leaves vertical scroll to the browser (so the body can still
-         scroll into the analytics section) while horizontal gestures are
-         ours to interpret as tab swipes. */
-      touch-action: pan-y;
     }
 
     /* Mode-driven visibility. Set by the pre-paint script via body[data-mode]. */
@@ -593,7 +592,7 @@
 
     /* ---------- learn view (inlined from former concepts.html) ---------- */
     .learn-view {
-      padding: 0 4px 48px;
+      padding: 8px 24px 48px;
       line-height: 1.55;
       font-size: 15.5px;
     }

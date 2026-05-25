@@ -301,20 +301,23 @@ document.querySelectorAll('.header .stat').forEach(el => {
   });
 });
 
-// Horizontal swipe across the app area switches between Practice and Play.
-// Vertical motion still goes to the browser (so the analytics scroll works).
+// Horizontal swipe anywhere on the page switches between Practice / Play /
+// Learn. Vertical motion still goes to the browser (so the analytics list
+// scrolls and the Learn article reads top-to-bottom). The listener lives
+// on the document so it picks up swipes started on the analytics rows
+// too — not just on .app.
 const SWIPE_MIN_DX = 60;
 const SWIPE_MAX_DY_RATIO = 1.5;
 const SWIPEABLE_MODES = ['practice', 'play', 'learn'];
-// Don't arm the swipe handler when the touch starts on an interactive
-// element — otherwise tapping a tab, an action button, or an expandable
-// analytics row can be misread as a tiny swipe and the iOS click also
-// gets lost behind the touchend handler on some builds.
-const SWIPE_IGNORE_SELECTOR = 'button, a, summary, details, .mode-tabs, .actions, .header';
-const appEl = document.querySelector('.app');
+// Don't arm the swipe handler when the touch starts on a tappable control
+// — otherwise a tap can be misread as a tiny swipe (or its click swallowed
+// on some iOS builds). Expandable category rows (details/summary) are NOT
+// in this list any more so swiping over a category still switches tabs;
+// the touch threshold keeps short taps from triggering a switch.
+const SWIPE_IGNORE_SELECTOR = 'button, a, .mode-tabs, .actions, .header';
 let swipeStartX = 0, swipeStartY = 0, swipeActive = false;
 
-appEl.addEventListener('touchstart', e => {
+document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1 || e.target.closest(SWIPE_IGNORE_SELECTOR)) {
     swipeActive = false;
     return;
@@ -324,7 +327,7 @@ appEl.addEventListener('touchstart', e => {
   swipeActive = true;
 }, { passive: true });
 
-appEl.addEventListener('touchend', e => {
+document.addEventListener('touchend', e => {
   if (!swipeActive || e.changedTouches.length !== 1) return;
   swipeActive = false;
   const dx = e.changedTouches[0].clientX - swipeStartX;
