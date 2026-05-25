@@ -57,6 +57,10 @@
       padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
       user-select: none;
       -webkit-user-select: none;
+      /* pan-y leaves vertical scroll to the browser (so the body can still
+         scroll into the analytics section) while horizontal gestures are
+         ours to interpret as tab swipes. */
+      touch-action: pan-y;
     }
 
     /* ---------- mode tabs ---------- */

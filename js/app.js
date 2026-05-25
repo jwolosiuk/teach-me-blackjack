@@ -274,4 +274,32 @@ document.querySelectorAll('.header .stat').forEach(el => {
   });
 });
 
+// Horizontal swipe across the app area switches between Practice and Play.
+// Vertical motion still goes to the browser (so the analytics scroll works).
+const SWIPE_MIN_DX = 60;
+const SWIPE_MAX_DY_RATIO = 1.5;
+const SWIPEABLE_MODES = ['practice', 'play'];
+const appEl = document.querySelector('.app');
+let swipeStartX = 0, swipeStartY = 0, swipeActive = false;
+
+appEl.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) { swipeActive = false; return; }
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+  swipeActive = true;
+}, { passive: true });
+
+appEl.addEventListener('touchend', e => {
+  if (!swipeActive || e.changedTouches.length !== 1) return;
+  swipeActive = false;
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const dy = e.changedTouches[0].clientY - swipeStartY;
+  if (Math.abs(dx) < SWIPE_MIN_DX) return;
+  if (Math.abs(dx) < Math.abs(dy) * SWIPE_MAX_DY_RATIO) return;
+  const i = SWIPEABLE_MODES.indexOf(currentMode);
+  if (i === -1) return;
+  const next = i + (dx < 0 ? 1 : -1);
+  if (next >= 0 && next < SWIPEABLE_MODES.length) switchMode(SWIPEABLE_MODES[next]);
+});
+
 switchMode(initialMode);
