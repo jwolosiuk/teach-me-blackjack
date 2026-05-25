@@ -131,7 +131,7 @@ function deal() {
   pState = 'awaiting';
   pFeedbackReady = false;
   currentResult = null;
-  current = dealSituation();
+  current = dealSituation(practiceStats);
   current.display = {
     player: buildDisplay(current.hand),
     upcard: buildDisplay([current.upcard])[0],
@@ -348,8 +348,10 @@ document.addEventListener('touchend', e => {
   if (Math.abs(dx) < Math.abs(dy) * SWIPE_MAX_DY_RATIO) return;
   const i = SWIPEABLE_MODES.indexOf(currentMode);
   if (i === -1) return;
-  const next = i + (dx < 0 ? 1 : -1);
-  if (next >= 0 && next < SWIPEABLE_MODES.length) switchMode(SWIPEABLE_MODES[next]);
+  const delta = dx < 0 ? 1 : -1;
+  // Wrap so Practice ← Learn and Practice → … → Learn → Practice cycle.
+  const next = (i + delta + SWIPEABLE_MODES.length) % SWIPEABLE_MODES.length;
+  switchMode(SWIPEABLE_MODES[next]);
 });
 
 switchMode(initialMode);
