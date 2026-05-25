@@ -29,17 +29,17 @@ const modes = {
   },
 };
 
+const STORAGE_KEY = 'blackjack-trainer:v1';
+
 let currentMode = null;
 const persisted = loadPersisted();
 const practiceStats = persisted.practice ?? createStats();
 const playStats = persisted.play ?? createPlayStats();
 const initialMode = persisted.mode === 'play' ? 'play' : 'practice';
 
-const STORAGE_KEY = 'blackjack-trainer:v1';
-
 function loadPersisted() {
   try {
-    const raw = localStorage.getItem('blackjack-trainer:v1');
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const data = JSON.parse(raw);
     return {

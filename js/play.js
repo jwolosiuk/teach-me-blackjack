@@ -7,6 +7,7 @@ import {
 } from './game.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
 import { recordPlayOutcome } from './stats.js';
+import { evaluateAction } from './evaluator.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true };
 
@@ -46,6 +47,8 @@ function deal() {
     hands: [newHand(playerCards)],
     active: 0,
     result: null,
+    lastDecision: null,
+    mistakes: 0,
   };
 
   const playerBJ = isBlackjack(playerCards);
@@ -82,8 +85,17 @@ function legalActions() {
 
 function handleAction(action) {
   if (game.phase !== 'awaiting') return;
-  if (!legalActions().includes(action)) return;
+  const legal = legalActions();
+  if (!legal.includes(action)) return;
   const h = activeHand();
+
+  // Score against basic strategy before mutating. Skip when the chart's
+  // optimal action isn't available in the current legal set (e.g. P after
+  // a previous split, where the chart would still say "P" for an [8,8] hand
+  // but resplit isn't offered — feedback would be misleading there).
+  const decision = evaluateAction({ hand: h.cards, upcard: game.dealer[0], action, rules: RULES });
+  game.lastDecision = legal.includes(decision.optimal) ? decision : null;
+  if (game.lastDecision && !game.lastDecision.correct) game.mistakes++;
 
   if (action === 'H') {
     h.cards.push(drawCard(shoe));
@@ -280,19 +292,34 @@ function renderActions() {
 
 function renderResult() {
   const fb = $('feedback');
-  if (game.phase !== 'result') {
-    fb.hidden = true;
+  if (game.phase === 'result') {
+    const r = game.result;
+    const tone = r.delta > 0 ? 'good' : r.delta < 0 ? 'bad' : 'neutral';
+    const icon = r.delta > 0 ? '✓' : r.delta < 0 ? '✗' : '=';
+    const sign = r.delta > 0 ? '+' : '';
+    const deltaTxt = r.delta === 0 ? '' : ` <b>${sign}${formatDelta(r.delta)}</b>`;
+    const labels = r.hands.map(h => h.label).join(' · ');
+    const note = game.mistakes > 0
+      ? ` <span class="muted-note">· ${game.mistakes} misplay${game.mistakes > 1 ? 's' : ''}</span>`
+      : '';
+    fb.hidden = false;
+    fb.className = `feedback ${tone}`;
+    fb.innerHTML = `<span class="icon">${icon}</span><span>${labels}${deltaTxt}${note}</span>`;
     return;
   }
-  const r = game.result;
-  const tone = r.delta > 0 ? 'good' : r.delta < 0 ? 'bad' : 'neutral';
-  const icon = r.delta > 0 ? '✓' : r.delta < 0 ? '✗' : '=';
-  const sign = r.delta > 0 ? '+' : '';
-  const deltaTxt = r.delta === 0 ? '' : ` <b>${sign}${formatDelta(r.delta)}</b>`;
-  const labels = r.hands.map(h => h.label).join(' · ');
-  fb.hidden = false;
-  fb.className = `feedback ${tone}`;
-  fb.innerHTML = `<span class="icon">${icon}</span><span>${labels}${deltaTxt}</span>`;
+  if (game.lastDecision) {
+    const d = game.lastDecision;
+    fb.hidden = false;
+    if (d.correct) {
+      fb.className = 'feedback good';
+      fb.innerHTML = `<span class="icon">✓</span><span>${ACTION_LABELS[d.chosen]}</span>`;
+    } else {
+      fb.className = 'feedback bad';
+      fb.innerHTML = `<span class="icon">✗</span><span>Should be <b>${ACTION_LABELS[d.optimal]}</b></span>`;
+    }
+    return;
+  }
+  fb.hidden = true;
 }
 
 function formatDelta(d) {
