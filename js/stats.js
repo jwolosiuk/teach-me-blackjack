@@ -69,6 +69,8 @@ export function createPlayStats() {
     losses: 0,
     pushes: 0,
     netUnits: 0,
+    // Same shape as practice recent[] so avgEvLoss() works on it too.
+    recent: [],
   };
 }
 
@@ -78,6 +80,11 @@ export function recordPlayOutcome(stats, outcome, delta) {
   else if (outcome === 'loss') stats.losses++;
   else stats.pushes++;
   stats.netUnits += delta;
+}
+
+export function recordPlayDecision(stats, { correct, cost }) {
+  stats.recent.push({ correct, cost });
+  if (stats.recent.length > WINDOW) stats.recent.shift();
 }
 
 export function winPercent(stats) {

@@ -1,7 +1,7 @@
 import { dealSituation } from './deal.js';
 import { legalActions, evaluateAction } from './evaluator.js';
 import { classifyHand, strategyDependsOnUpcard } from './strategy.js';
-import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats, winPercent } from './stats.js';
+import { createStats, updateStats, accuracy, avgEvLoss, createPlayStats } from './stats.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
 import * as play from './play.js';
 
@@ -25,7 +25,7 @@ const modes = {
     activate: () => play.activate(playStats, renderPlayStats),
     deactivate: () => play.deactivate(),
     renderStats: renderPlayStats,
-    statLabels: ['win %', 'hands', 'net'],
+    statLabels: ['ev loss', 'hands', 'net'],
   },
 };
 
@@ -36,6 +36,7 @@ const persisted = loadPersisted();
 const practiceStats = persisted.practice ?? createStats();
 if (!Array.isArray(practiceStats.recent)) practiceStats.recent = [];
 const playStats = persisted.play ?? createPlayStats();
+if (!Array.isArray(playStats.recent)) playStats.recent = [];
 const initialMode = persisted.mode === 'play' ? 'play' : 'practice';
 
 function loadPersisted() {
@@ -248,8 +249,8 @@ function deactivatePractice() {
 // ---------- play-mode stat rendering (data lives in play.js) ----------
 
 function renderPlayStats() {
-  const wp = winPercent(playStats);
-  $('stat-1').textContent = wp === null ? '—' : `${Math.round(wp * 100)}%`;
+  const evl = avgEvLoss(playStats);
+  $('stat-1').textContent = evl === null ? '—' : evl.toFixed(3);
   $('stat-2').textContent = String(playStats.hands);
   const net = playStats.netUnits;
   const sign = net > 0 ? '+' : '';

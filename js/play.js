@@ -6,7 +6,7 @@ import {
   handTotal, isSoft, isBust, isBlackjack, dealerPlay,
 } from './game.js';
 import { buildDisplay, renderCard, renderBack } from './render.js';
-import { recordPlayOutcome } from './stats.js';
+import { recordPlayOutcome, recordPlayDecision } from './stats.js';
 import { evaluateAction } from './evaluator.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true };
@@ -96,9 +96,13 @@ function handleAction(action) {
   // but resplit isn't offered — feedback would be misleading there).
   const decision = evaluateAction({ hand: h.cards, upcard: game.dealer[0], action, rules: RULES });
   game.lastDecision = legal.includes(decision.optimal) ? decision : null;
-  if (game.lastDecision && !game.lastDecision.correct) {
-    game.mistakes++;
-    game.totalCost += game.lastDecision.cost;
+  if (game.lastDecision) {
+    recordPlayDecision(stats, { correct: game.lastDecision.correct, cost: game.lastDecision.cost });
+    onStatsChange?.(stats);
+    if (!game.lastDecision.correct) {
+      game.mistakes++;
+      game.totalCost += game.lastDecision.cost;
+    }
   }
 
   if (action === 'H') {
