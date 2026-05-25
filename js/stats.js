@@ -1,3 +1,5 @@
+const WINDOW = 100;
+
 export function createStats() {
   return {
     total: 0,
@@ -14,6 +16,9 @@ export function createStats() {
     // V3 (real EV):   fraction of available EV the player actually captured.
     totalCost: 0,
     totalOptimal: 0,
+    // Rolling window of the last WINDOW decisions: { correct, cost }.
+    // Drives the headline accuracy / EV-loss stats so they reflect recent play.
+    recent: [],
   };
 }
 
@@ -30,6 +35,8 @@ export function updateStats(stats, { result, type }) {
   }
   stats.totalCost += result.cost;
   stats.totalOptimal += result.optimalEv;
+  stats.recent.push({ correct: result.correct, cost: result.cost });
+  if (stats.recent.length > WINDOW) stats.recent.shift();
 }
 
 export function efficiency(stats) {
@@ -38,13 +45,19 @@ export function efficiency(stats) {
 }
 
 export function accuracy(stats) {
-  if (stats.total === 0) return null;
-  return stats.correct / stats.total;
+  const r = stats.recent ?? [];
+  if (r.length === 0) return null;
+  let correct = 0;
+  for (const d of r) if (d.correct) correct++;
+  return correct / r.length;
 }
 
 export function avgEvLoss(stats) {
-  if (stats.total === 0) return null;
-  return stats.totalCost / stats.total;
+  const r = stats.recent ?? [];
+  if (r.length === 0) return null;
+  let sum = 0;
+  for (const d of r) sum += d.cost;
+  return sum / r.length;
 }
 
 // --- Play-mode stats (separate from training accuracy). One settled

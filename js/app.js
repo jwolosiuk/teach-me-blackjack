@@ -19,7 +19,7 @@ const modes = {
     activate: activatePractice,
     deactivate: deactivatePractice,
     renderStats: renderPracticeStats,
-    statLabels: ['accuracy', 'ev loss', 'streak'],
+    statLabels: ['accuracy', 'ev loss', 'hands'],
   },
   play: {
     activate: () => play.activate(playStats, renderPlayStats),
@@ -34,6 +34,7 @@ const STORAGE_KEY = 'blackjack-trainer:v1';
 let currentMode = null;
 const persisted = loadPersisted();
 const practiceStats = persisted.practice ?? createStats();
+if (!Array.isArray(practiceStats.recent)) practiceStats.recent = [];
 const playStats = persisted.play ?? createPlayStats();
 const initialMode = persisted.mode === 'play' ? 'play' : 'practice';
 
@@ -209,7 +210,7 @@ function renderPracticeStats() {
   const evl = avgEvLoss(practiceStats);
   $('stat-1').textContent = acc === null ? '—' : `${Math.round(acc * 100)}%`;
   $('stat-2').textContent = evl === null ? '—' : evl.toFixed(3);
-  $('stat-3').textContent = String(practiceStats.streak);
+  $('stat-3').textContent = String(practiceStats.total);
   persist();
 }
 
