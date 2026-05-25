@@ -189,8 +189,15 @@ function showFeedback(result) {
     fb.innerHTML = `<span class="icon">✓</span><span>Correct</span>`;
   } else {
     fb.className = 'feedback bad';
-    fb.innerHTML = `<span class="icon">✗</span><span>Should be <b>${ACTION_LABELS[result.optimal]}</b></span>`;
+    fb.innerHTML = `<span class="icon">✗</span><span>Should be <b>${ACTION_LABELS[result.optimal]}</b> <span class="muted-note">(${formatEvCost(result.cost)})</span></span>`;
   }
+}
+
+// Cost is in bet units. Always negative (you lost EV vs optimal).
+// Below 0.01 bet, show "<0.01" so a near-tie doesn't read as "0.00".
+function formatEvCost(cost) {
+  if (cost < 0.005) return '−<0.01 EV';
+  return `−${cost.toFixed(2)} EV`;
 }
 
 function hideFeedback() {

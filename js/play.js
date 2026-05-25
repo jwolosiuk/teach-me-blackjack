@@ -49,6 +49,7 @@ function deal() {
     result: null,
     lastDecision: null,
     mistakes: 0,
+    totalCost: 0,
   };
 
   const playerBJ = isBlackjack(playerCards);
@@ -95,7 +96,10 @@ function handleAction(action) {
   // but resplit isn't offered — feedback would be misleading there).
   const decision = evaluateAction({ hand: h.cards, upcard: game.dealer[0], action, rules: RULES });
   game.lastDecision = legal.includes(decision.optimal) ? decision : null;
-  if (game.lastDecision && !game.lastDecision.correct) game.mistakes++;
+  if (game.lastDecision && !game.lastDecision.correct) {
+    game.mistakes++;
+    game.totalCost += game.lastDecision.cost;
+  }
 
   if (action === 'H') {
     h.cards.push(drawCard(shoe));
@@ -300,7 +304,7 @@ function renderResult() {
     const deltaTxt = r.delta === 0 ? '' : ` <b>${sign}${formatDelta(r.delta)}</b>`;
     const labels = r.hands.map(h => h.label).join(' · ');
     const note = game.mistakes > 0
-      ? ` <span class="muted-note">· ${game.mistakes} misplay${game.mistakes > 1 ? 's' : ''}</span>`
+      ? ` <span class="muted-note">· ${game.mistakes} misplay${game.mistakes > 1 ? 's' : ''} (${formatEvCost(game.totalCost)})</span>`
       : '';
     fb.hidden = false;
     fb.className = `feedback ${tone}`;
@@ -315,11 +319,16 @@ function renderResult() {
       fb.innerHTML = `<span class="icon">✓</span><span>${ACTION_LABELS[d.chosen]}</span>`;
     } else {
       fb.className = 'feedback bad';
-      fb.innerHTML = `<span class="icon">✗</span><span>Should be <b>${ACTION_LABELS[d.optimal]}</b></span>`;
+      fb.innerHTML = `<span class="icon">✗</span><span>Should be <b>${ACTION_LABELS[d.optimal]}</b> <span class="muted-note">(${formatEvCost(d.cost)})</span></span>`;
     }
     return;
   }
   fb.hidden = true;
+}
+
+function formatEvCost(cost) {
+  if (cost < 0.005) return '−<0.01 EV';
+  return `−${cost.toFixed(2)} EV`;
 }
 
 function formatDelta(d) {
