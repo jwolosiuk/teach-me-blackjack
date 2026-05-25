@@ -36,3 +36,28 @@ export function efficiency(stats) {
   if (stats.totalOptimal === 0) return null;
   return 1 - stats.totalCost / stats.totalOptimal;
 }
+
+// --- Play-mode stats (separate from training accuracy). One settled
+// hand = one increment, so split hands count individually.
+export function createPlayStats() {
+  return {
+    hands: 0,
+    wins: 0,
+    losses: 0,
+    pushes: 0,
+    netUnits: 0,
+  };
+}
+
+export function recordPlayOutcome(stats, outcome, delta) {
+  stats.hands++;
+  if (outcome === 'win') stats.wins++;
+  else if (outcome === 'loss') stats.losses++;
+  else stats.pushes++;
+  stats.netUnits += delta;
+}
+
+export function winPercent(stats) {
+  if (stats.hands === 0) return null;
+  return stats.wins / stats.hands;
+}

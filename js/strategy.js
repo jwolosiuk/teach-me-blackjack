@@ -66,3 +66,16 @@ export function getOptimalAction(playerHand, dealerUpcard, rules = {}) {
   }
   return resolveCell(cell, playerHand.length, r);
 }
+
+// True when this exact hand's optimal action changes across dealer upcards
+// (i.e., the upcard actually matters for the decision). Pair 8s, hard 17+
+// and similar "always X" rows return false.
+export function strategyDependsOnUpcard(playerHand, rules = {}) {
+  let first = null;
+  for (const up of DEALER_UPCARDS) {
+    const a = getOptimalAction(playerHand, up, rules);
+    if (first === null) first = a;
+    else if (a !== first) return true;
+  }
+  return false;
+}

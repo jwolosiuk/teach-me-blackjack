@@ -21,6 +21,9 @@
       --bad: #f85149;
       --bad-bg: rgba(248, 81, 73, 0.12);
       --bad-border: rgba(248, 81, 73, 0.35);
+      --warn: #d2a24c;
+      --warn-bg: rgba(210, 162, 76, 0.16);
+      --warn-border: rgba(210, 162, 76, 0.4);
     }
 
     * { box-sizing: border-box; }
@@ -52,12 +55,40 @@
       padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
     }
 
+    /* ---------- mode tabs ---------- */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 10px 24px 0;
+    }
+    .mode-tab {
+      appearance: none;
+      -webkit-appearance: none;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      padding: 10px 0 8px;
+      cursor: pointer;
+      transition: color 160ms ease, border-color 160ms ease;
+    }
+    .mode-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+
     /* ---------- header ---------- */
     .header {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
-      padding: 14px 24px 6px;
+      padding: 10px 24px 6px;
     }
     .stat {
       display: flex;
@@ -110,6 +141,60 @@
     .cards {
       display: flex;
       gap: 10px;
+    }
+    .cards.split {
+      flex-direction: column;
+      gap: 12px;
+    }
+    .split-hand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 6px 8px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+    .split-hand.active {
+      border-color: var(--good-border);
+      background: var(--good-bg);
+    }
+    .split-cards .card {
+      width: 52px;
+      height: 74px;
+    }
+    .split-cards .card .rank { font-size: 22px; }
+    .split-cards .card .suit { font-size: 16px; }
+    .split-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- strategy hint badge ---------- */
+    .hand-text { margin-right: 8px; }
+    .hint {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+      vertical-align: middle;
+      border: 1px solid transparent;
+    }
+    .hint.fixed {
+      color: var(--good);
+      background: var(--good-bg);
+      border-color: var(--good-border);
+    }
+    .hint.variable {
+      color: var(--warn);
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
     }
 
     /* ---------- cards ---------- */
@@ -190,6 +275,11 @@
       color: var(--bad);
       border-color: var(--bad-border);
     }
+    .feedback.neutral {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: var(--border);
+    }
     .feedback .icon {
       font-size: 18px;
       font-weight: 700;
@@ -245,15 +335,20 @@
 </head>
 <body>
   <main class="app">
+    <nav class="mode-tabs">
+      <button class="mode-tab active" type="button" data-mode="practice">Practice</button>
+      <button class="mode-tab" type="button" data-mode="play">Play</button>
+    </nav>
+
     <header class="header">
-      <div class="stat"><span class="value" id="accuracy">—</span><span class="label">accuracy</span></div>
-      <div class="stat"><span class="value" id="streak">0</span><span class="label">streak</span></div>
-      <div class="stat"><span class="value" id="total">0</span><span class="label">hands</span></div>
+      <div class="stat"><span class="value" id="stat-1">—</span><span class="label">accuracy</span></div>
+      <div class="stat"><span class="value" id="stat-2">0</span><span class="label">streak</span></div>
+      <div class="stat"><span class="value" id="stat-3">0</span><span class="label">hands</span></div>
     </header>
 
     <section class="table">
       <div class="zone dealer">
-        <div class="zone-label">Dealer</div>
+        <div class="zone-label" id="dealer-label">Dealer</div>
         <div class="cards" id="dealer-cards"></div>
       </div>
       <div class="zone player">

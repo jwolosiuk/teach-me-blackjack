@@ -1,78 +1,69 @@
 import { dealSituation } from './deal.js';
 import { legalActions, evaluateAction } from './evaluator.js';
-import { classifyHand } from './strategy.js';
-import { createStats, updateStats, efficiency } from './stats.js';
+import { classifyHand, strategyDependsOnUpcard } from './strategy.js';
+import { createStats, updateStats, efficiency, createPlayStats, winPercent } from './stats.js';
+import { buildDisplay, renderCard, renderBack } from './render.js';
+import * as play from './play.js';
 
 const RULES = { dealerHitsSoft17: false, das: true, lateSurrender: true, numDecks: 6 };
 
-const ACTION_LABELS = {
-  H: 'Hit',
-  S: 'Stand',
-  D: 'Double',
-  P: 'Split',
-  R: 'Surrender',
-};
+const ACTION_LABELS = { H: 'Hit', S: 'Stand', D: 'Double', P: 'Split', R: 'Surrender' };
 const ACTION_ORDER = ['H', 'S', 'D', 'P', 'R'];
-
-const SUITS = ['♠', '♥', '♦', '♣'];
-const RED_SUITS = new Set(['♥', '♦']);
-const FACE_NAMES = ['10', 'J', 'Q', 'K'];
 
 const $ = id => document.getElementById(id);
 
-const stats = createStats();
+// ---------- mode switching ----------
+
+const modes = {
+  practice: {
+    activate: activatePractice,
+    deactivate: deactivatePractice,
+    renderStats: renderPracticeStats,
+    statLabels: ['accuracy', 'streak', 'hands'],
+  },
+  play: {
+    activate: () => play.activate(playStats, renderPlayStats),
+    deactivate: () => play.deactivate(),
+    renderStats: renderPlayStats,
+    statLabels: ['win %', 'hands', 'net'],
+  },
+};
+
+let currentMode = null;
+const practiceStats = createStats();
+const playStats = createPlayStats();
+
+function switchMode(name) {
+  if (currentMode === name) return;
+  if (currentMode) modes[currentMode].deactivate();
+  currentMode = name;
+  for (const tab of document.querySelectorAll('.mode-tab')) {
+    tab.classList.toggle('active', tab.dataset.mode === name);
+  }
+  // Reset shared DOM bits between modes
+  $('feedback').hidden = true;
+  $('actions').innerHTML = '';
+  $('player-cards').classList.remove('split');
+  // stat labels swap per mode
+  document.querySelectorAll('.stat .label').forEach((el, i) => {
+    el.textContent = modes[name].statLabels[i];
+  });
+  modes[name].renderStats();
+  modes[name].activate();
+}
+
+// ---------- practice mode (single-decision training) ----------
+
 let current = null;
-// 'awaiting' = waiting for player action; 'feedback' = showing result, tap advances.
-let state = 'awaiting';
-let pendingAdvance = null;
-let feedbackReady = false;
-
-function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function rankLabel(value) {
-  if (value === 11) return 'A';
-  if (value === 10) return randomItem(FACE_NAMES);
-  return String(value);
-}
-
-function buildDisplay(values) {
-  return values.map(v => ({ rank: rankLabel(v), suit: randomItem(SUITS) }));
-}
-
-function renderCard(card) {
-  const div = document.createElement('div');
-  div.className = 'card' + (RED_SUITS.has(card.suit) ? ' red' : '');
-  div.innerHTML = `
-    <div class="rank">${card.rank}</div>
-    <div class="suit">${card.suit}</div>
-  `;
-  return div;
-}
-
-function renderBack() {
-  const div = document.createElement('div');
-  div.className = 'card back';
-  return div;
-}
-
-function handLabel(hand) {
-  const { type, total } = classifyHand(hand);
-  if (type === 'pair') {
-    const rank = hand[0] === 11 ? 'Aces' : `${hand[0]}s`;
-    return `Pair of ${rank}`;
-  }
-  if (type === 'soft') {
-    return `Soft ${total} · A,${total - 11}`;
-  }
-  return `Hard ${total}`;
-}
+let pState = 'awaiting'; // 'awaiting' | 'feedback'
+let pPendingAdvance = null;
+let pFeedbackReady = false;
+let pDocClick = null;
 
 function deal() {
   cancelAdvance();
-  state = 'awaiting';
-  feedbackReady = false;
+  pState = 'awaiting';
+  pFeedbackReady = false;
   current = dealSituation();
   current.display = {
     player: buildDisplay(current.hand),
@@ -88,12 +79,33 @@ function renderSituation() {
   dealerEl.innerHTML = '';
   dealerEl.appendChild(renderCard(current.display.upcard));
   dealerEl.appendChild(renderBack());
+  $('dealer-label').textContent = 'Dealer';
 
   const playerEl = $('player-cards');
   playerEl.innerHTML = '';
   current.display.player.forEach(c => playerEl.appendChild(renderCard(c)));
 
-  $('hand-label').textContent = handLabel(current.hand);
+  const label = $('hand-label');
+  label.hidden = false;
+  label.innerHTML = handLabelHtml(current.hand);
+}
+
+function handLabelHtml(hand) {
+  const { type, total } = classifyHand(hand);
+  let text;
+  if (type === 'pair') {
+    const rank = hand[0] === 11 ? 'Aces' : `${hand[0]}s`;
+    text = `Pair of ${rank}`;
+  } else if (type === 'soft') {
+    text = `Soft ${total} · A,${total - 11}`;
+  } else {
+    text = `Hard ${total}`;
+  }
+  const depends = strategyDependsOnUpcard(hand, RULES);
+  const hint = depends
+    ? `<span class="hint variable" title="Strategy depends on dealer upcard">?</span>`
+    : `<span class="hint fixed" title="Strategy is the same vs any upcard">✓</span>`;
+  return `<span class="hand-text">${text}</span>${hint}`;
 }
 
 function renderActions() {
@@ -106,40 +118,30 @@ function renderActions() {
     btn.type = 'button';
     btn.dataset.action = a;
     btn.textContent = ACTION_LABELS[a];
-    btn.addEventListener('click', e => handleAction(a, e));
+    btn.addEventListener('click', e => handleDecision(a, e));
     el.appendChild(btn);
   });
-  if (ordered.length % 2 === 1) {
-    el.lastChild.classList.add('span-2');
-  }
+  if (ordered.length % 2 === 1) el.lastChild.classList.add('span-2');
 }
 
-function handleAction(action, e) {
-  if (state !== 'awaiting') return;
+function handleDecision(action, e) {
+  if (pState !== 'awaiting') return;
   e.stopPropagation();
-  state = 'feedback';
+  pState = 'feedback';
   const result = evaluateAction({ hand: current.hand, upcard: current.upcard, action, rules: RULES });
-  updateStats(stats, { result, type: current.type });
+  updateStats(practiceStats, { result, type: current.type });
   showFeedback(result);
-  renderStats();
-
-  // Brief grace period so the click that triggered feedback doesn't immediately advance.
-  setTimeout(() => { feedbackReady = true; }, 120);
-  if (result.correct) {
-    pendingAdvance = setTimeout(advance, 850);
-  }
+  renderPracticeStats();
+  setTimeout(() => { pFeedbackReady = true; }, 120);
+  if (result.correct) pPendingAdvance = setTimeout(advance, 850);
 }
 
 function showFeedback(result) {
   const el = $('actions');
   for (const btn of el.children) {
     const a = btn.dataset.action;
-    if (a === result.chosen) {
-      btn.classList.add('chosen', result.correct ? 'good' : 'bad');
-    }
-    if (!result.correct && a === result.optimal) {
-      btn.classList.add('reveal');
-    }
+    if (a === result.chosen) btn.classList.add('chosen', result.correct ? 'good' : 'bad');
+    if (!result.correct && a === result.optimal) btn.classList.add('reveal');
   }
   const fb = $('feedback');
   fb.hidden = false;
@@ -150,36 +152,65 @@ function showFeedback(result) {
     fb.className = 'feedback bad';
     fb.innerHTML = `<span class="icon">✗</span><span>Should be <b>${ACTION_LABELS[result.optimal]}</b></span>`;
   }
-  // V3 hook: if (result.cost !== undefined) append cost display here.
 }
 
 function hideFeedback() {
   $('feedback').hidden = true;
 }
 
-function renderStats() {
-  const eff = efficiency(stats);
-  $('accuracy').textContent = eff === null ? '—' : `${Math.round(eff * 100)}%`;
-  $('streak').textContent = String(stats.streak);
-  $('total').textContent = String(stats.total);
+function renderPracticeStats() {
+  const eff = efficiency(practiceStats);
+  $('stat-1').textContent = eff === null ? '—' : `${Math.round(eff * 100)}%`;
+  $('stat-2').textContent = String(practiceStats.streak);
+  $('stat-3').textContent = String(practiceStats.total);
 }
 
 function cancelAdvance() {
-  if (pendingAdvance !== null) {
-    clearTimeout(pendingAdvance);
-    pendingAdvance = null;
+  if (pPendingAdvance !== null) {
+    clearTimeout(pPendingAdvance);
+    pPendingAdvance = null;
   }
 }
 
 function advance() {
-  if (state !== 'feedback') return;
+  if (pState !== 'feedback') return;
   cancelAdvance();
   deal();
 }
 
-document.addEventListener('click', () => {
-  if (state === 'feedback' && feedbackReady) advance();
+function maybeAdvanceOnTap() {
+  if (pState === 'feedback' && pFeedbackReady) advance();
+}
+
+function activatePractice() {
+  pDocClick = maybeAdvanceOnTap;
+  document.addEventListener('click', pDocClick);
+  deal();
+}
+
+function deactivatePractice() {
+  cancelAdvance();
+  if (pDocClick) {
+    document.removeEventListener('click', pDocClick);
+    pDocClick = null;
+  }
+}
+
+// ---------- play-mode stat rendering (data lives in play.js) ----------
+
+function renderPlayStats() {
+  const wp = winPercent(playStats);
+  $('stat-1').textContent = wp === null ? '—' : `${Math.round(wp * 100)}%`;
+  $('stat-2').textContent = String(playStats.hands);
+  const net = playStats.netUnits;
+  const sign = net > 0 ? '+' : '';
+  $('stat-3').textContent = net === 0 ? '0' : `${sign}${Number.isInteger(net) ? net : net.toFixed(1)}`;
+}
+
+// ---------- bootstrap ----------
+
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchMode(tab.dataset.mode));
 });
 
-renderStats();
-deal();
+switchMode('practice');
