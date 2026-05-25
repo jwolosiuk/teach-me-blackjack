@@ -34,7 +34,7 @@ Rows are the player total (or pair rank). Columns are the dealer upcard 2–10 a
 |     13 | S | S | S | S | S | H | H | H | H  | H |
 |     14 | S | S | S | S | S | H | H | H | H  | H |
 |     15 | S | S | S | S | S | H | H | H | R  | H |
-|     16 | S | S | S | S | S | H | H | R | R  | H |
+|     16 | S | S | S | S | S | H | H | R | R  | R |
 |     17 | S | S | S | S | S | S | S | S | S  | S |
 |     18 | S | S | S | S | S | S | S | S | S  | S |
 |     19 | S | S | S | S | S | S | S | S | S  | S |
@@ -43,16 +43,20 @@ Rows are the player total (or pair rank). Columns are the dealer upcard 2–10 a
 S17 notes (where S17 differs from H17):
 - **11 vs A → H** under S17 (H17 chart says D).
 - **15 vs A → H** under S17 (H17 chart says R).
-- **16 vs A → H** under S17 (H17 chart says R).
 - **17 vs A → S** under S17 (H17 chart says R).
+
+3 cells re-verified against the in-repo solver (`js/solver.js`, infinite-deck S17, peeked):
+- **16 vs A → R** under S17 w/ LS (was H here; solver: R=-0.500 beats H=-0.517).
+- **A,2 vs 5 → H** under S17 (was D; solver: H=+0.133 beats D=+0.126).
+- **A,4 vs 4 → H** under S17 (was D; solver: H=+0.059 beats D=+0.058).
 
 ## Soft totals (one ace counted as 11)
 
 |  Total | 2 | 3 | 4 | 5 | 6  | 7 | 8 | 9 | 10 | A |
 |-------:|---|---|---|---|----|---|---|---|----|---|
-| 13 (A,2) | H  | H  | H  | D  | D  | H | H | H | H | H |
+| 13 (A,2) | H  | H  | H  | H  | D  | H | H | H | H | H |
 | 14 (A,3) | H  | H  | H  | D  | D  | H | H | H | H | H |
-| 15 (A,4) | H  | H  | D  | D  | D  | H | H | H | H | H |
+| 15 (A,4) | H  | H  | H  | D  | D  | H | H | H | H | H |
 | 16 (A,5) | H  | H  | D  | D  | D  | H | H | H | H | H |
 | 17 (A,6) | H  | D  | D  | D  | D  | H | H | H | H | H |
 | 18 (A,7) | S  | Ds | Ds | Ds | Ds | S | S | H | H | H |

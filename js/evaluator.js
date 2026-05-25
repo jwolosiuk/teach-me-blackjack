@@ -1,4 +1,5 @@
-import { getOptimalAction, isPair } from './strategy.js';
+import { isPair } from './strategy.js';
+import { solveActions } from './solver.js';
 
 // Set of legal actions for the player. Used by the UI to enable/disable buttons.
 export function legalActions(hand, rules = {}) {
@@ -13,20 +14,22 @@ export function legalActions(hand, rules = {}) {
   return actions;
 }
 
-// Unified contract for V1 and V3:
-//   { chosen, optimal, ev: {action: number}, chosenEv, optimalEv, cost, correct }
-// V1 (here) uses binary EV — optimal action scores 1, the rest 0. cost is 0 or 1.
-// V3 will plug a solver that fills `ev` with real per-action EV in bet-units; the
-// same aggregation (sum cost, sum optimalEv) yields % accuracy in V1 and %
-// EV-efficiency in V3 without changing any caller code.
+const EPSILON = 1e-9;
+
+// V3 contract — same shape as V1, real per-action EVs (in bet units) come
+// from solver.js. `optimal` is the action with the highest EV; `cost` is
+// the EV the player gives up by not picking it. `correct` is true when
+// the chosen action is within float-noise of optimal so picking an action
+// that ties for first still counts as correct.
 export function evaluateAction({ hand, upcard, action, rules }) {
-  const optimal = getOptimalAction(hand, upcard, rules);
-  const ev = {};
-  for (const a of legalActions(hand, rules)) {
-    ev[a] = a === optimal ? 1 : 0;
+  const ev = solveActions(hand, upcard, rules);
+  const actionsAvail = Object.keys(ev);
+  let optimal = actionsAvail[0];
+  for (const a of actionsAvail) {
+    if (ev[a] > ev[optimal]) optimal = a;
   }
-  const chosenEv = ev[action] ?? 0;
-  const optimalEv = Math.max(...Object.values(ev));
+  const chosenEv = ev[action] ?? -Infinity;
+  const optimalEv = ev[optimal];
   const cost = optimalEv - chosenEv;
   return {
     chosen: action,
@@ -35,6 +38,6 @@ export function evaluateAction({ hand, upcard, action, rules }) {
     chosenEv,
     optimalEv,
     cost,
-    correct: cost === 0,
+    correct: cost < EPSILON,
   };
 }

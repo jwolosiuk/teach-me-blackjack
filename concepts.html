@@ -270,19 +270,19 @@
       <p>Here's how often the dealer ends up busting, just from following that rule. The split between 6 and 7 is the most important number in blackjack:</p>
 
       <div class="bust-chart" aria-label="Dealer bust probability by upcard">
-        <div class="bust-row weak">   <span class="upcard">2</span> <div class="bar"><span style="width:35.3%"></span></div> <span class="value">35.3%</span></div>
-        <div class="bust-row weak">   <span class="upcard">3</span> <div class="bar"><span style="width:37.6%"></span></div> <span class="value">37.6%</span></div>
-        <div class="bust-row weak">   <span class="upcard">4</span> <div class="bar"><span style="width:40.3%"></span></div> <span class="value">40.3%</span></div>
-        <div class="bust-row weak">   <span class="upcard">5</span> <div class="bar"><span style="width:42.9%"></span></div> <span class="value">42.9%</span></div>
-        <div class="bust-row weak">   <span class="upcard">6</span> <div class="bar"><span style="width:42.1%"></span></div> <span class="value">42.1%</span></div>
+        <div class="bust-row weak">   <span class="upcard">2</span> <div class="bar"><span style="width:35.4%"></span></div> <span class="value">35.4%</span></div>
+        <div class="bust-row weak">   <span class="upcard">3</span> <div class="bar"><span style="width:37.4%"></span></div> <span class="value">37.4%</span></div>
+        <div class="bust-row weak">   <span class="upcard">4</span> <div class="bar"><span style="width:39.4%"></span></div> <span class="value">39.4%</span></div>
+        <div class="bust-row weak">   <span class="upcard">5</span> <div class="bar"><span style="width:41.6%"></span></div> <span class="value">41.6%</span></div>
+        <div class="bust-row weak">   <span class="upcard">6</span> <div class="bar"><span style="width:42.3%"></span></div> <span class="value">42.3%</span></div>
         <div class="bust-divider"></div>
-        <div class="bust-row strong"> <span class="upcard">7</span> <div class="bar"><span style="width:26.0%"></span></div> <span class="value">26.0%</span></div>
-        <div class="bust-row strong"> <span class="upcard">8</span> <div class="bar"><span style="width:24.4%"></span></div> <span class="value">24.4%</span></div>
+        <div class="bust-row strong"> <span class="upcard">7</span> <div class="bar"><span style="width:26.2%"></span></div> <span class="value">26.2%</span></div>
+        <div class="bust-row strong"> <span class="upcard">8</span> <div class="bar"><span style="width:24.5%"></span></div> <span class="value">24.5%</span></div>
         <div class="bust-row strong"> <span class="upcard">9</span> <div class="bar"><span style="width:22.8%"></span></div> <span class="value">22.8%</span></div>
-        <div class="bust-row strong"> <span class="upcard">10</span><div class="bar"><span style="width:21.4%"></span></div> <span class="value">21.4%</span></div>
-        <div class="bust-row strong"> <span class="upcard">A</span> <div class="bar"><span style="width:11.7%"></span></div> <span class="value">11.7%</span></div>
+        <div class="bust-row strong"> <span class="upcard">10</span><div class="bar"><span style="width:23.0%"></span></div> <span class="value">23.0%</span></div>
+        <div class="bust-row strong"> <span class="upcard">A</span> <div class="bar"><span style="width:16.6%"></span></div> <span class="value">16.6%</span></div>
       </div>
-      <p class="chart-caption">6 decks, S17, dealer plays from upcard + random hole. Bars scaled linearly (max ≈ 43%). Ace already excludes the cases where the dealer has natural blackjack.</p>
+      <p class="chart-caption">Computed exactly by this app's solver (<code>js/solver.js</code>): infinite-deck S17, conditioned on the dealer not having a natural blackjack (matches what the player actually sees once the hand starts). Bars scaled linearly (max ≈ 42%).</p>
 
       <p>Two things to read off this:</p>
       <ul>

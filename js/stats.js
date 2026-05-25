@@ -32,9 +32,12 @@ export function updateStats(stats, { result, type }) {
   stats.totalOptimal += result.optimalEv;
 }
 
+// Average EV preserved per decision: 1 - avg cost (in bet units).
+// For binary V1 (cost ∈ {0,1}) this collapses to correct/total = accuracy.
+// For real V3 EVs, 100% = chart-perfect play, 99% ≈ leaking 0.01 bet/decision.
 export function efficiency(stats) {
-  if (stats.totalOptimal === 0) return null;
-  return 1 - stats.totalCost / stats.totalOptimal;
+  if (stats.total === 0) return null;
+  return 1 - stats.totalCost / stats.total;
 }
 
 // --- Play-mode stats (separate from training accuracy). One settled

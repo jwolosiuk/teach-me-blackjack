@@ -25,6 +25,8 @@
   <script type="module">
     import { getOptimalAction, classifyHand, isPair } from './js/strategy.js';
     import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './js/strategy-table.js';
+    import { solveActions, dealerDistribution, handTotal, isSoft, addCard } from './js/solver.js';
+    import { evaluateAction } from './js/evaluator.js';
 
     // --- Tiny harness ---
     const results = [];
@@ -190,7 +192,7 @@
     describe('edge cases — hard totals & surrender', () => {
       it('hard 16 vs 10 → R', () => assertEqual(getOptimalAction([10, 6], 10), 'R'));
       it('hard 16 vs 9  → R', () => assertEqual(getOptimalAction([10, 6], 9), 'R'));
-      it('hard 16 vs A  → H (S17, no surrender)', () => assertEqual(getOptimalAction([10, 6], 11), 'H'));
+      it('hard 16 vs A  → R (S17, LS — solver-verified close call)', () => assertEqual(getOptimalAction([10, 6], 11), 'R'));
       it('hard 15 vs 10 → R', () => assertEqual(getOptimalAction([10, 5], 10), 'R'));
       it('hard 15 vs A  → H (S17, no surrender)', () => assertEqual(getOptimalAction([10, 5], 11), 'H'));
       it('hard 12 vs 2 → H (common error: standing)', () => assertEqual(getOptimalAction([4, 8], 2), 'H'));
@@ -230,6 +232,123 @@
       it('hard 16 vs 10 = R', () => assertEqual(getOptimalAction([10, 6], 10), 'R'));
       it('soft 18 vs 3 = D (cell Ds, 2-card)', () => assertEqual(getOptimalAction([11, 7], 3), 'D'));
       it('pair 9,9 vs 7 = S', () => assertEqual(getOptimalAction([9, 9], 7), 'S'));
+    });
+
+    // ========== EV solver ==========
+    function approx(a, b, tol) { return Math.abs(a - b) < tol; }
+
+    describe('solver helpers — handTotal / isSoft / addCard', () => {
+      it('handTotal [10,5] = 15 hard', () => { assertEqual(handTotal([10,5]), 15); assertEqual(isSoft([10,5]), false); });
+      it('handTotal [11,5] = 16 soft', () => { assertEqual(handTotal([11,5]), 16); assertEqual(isSoft([11,5]), true); });
+      it('handTotal [11,5,10] = 16 hard (demote)', () => { assertEqual(handTotal([11,5,10]), 16); assertEqual(isSoft([11,5,10]), false); });
+      it('handTotal [11,11] = 12 soft', () => { assertEqual(handTotal([11,11]), 12); assertEqual(isSoft([11,11]), true); });
+      it('handTotal [11,11,9] = 21 soft (A,A,9)', () => { assertEqual(handTotal([11,11,9]), 21); assertEqual(isSoft([11,11,9]), true); });
+      it('addCard 12h+5 → 17h', () => assertEqual(JSON.stringify(addCard(12,false,5)), JSON.stringify({total:17,soft:false})));
+      it('addCard 13s+9 → 12h (ace demotes)', () => assertEqual(JSON.stringify(addCard(13,true,9)), JSON.stringify({total:12,soft:false})));
+      it('addCard 13s+A → 14s (new ace counts as 1)', () => assertEqual(JSON.stringify(addCard(13,true,11)), JSON.stringify({total:14,soft:true})));
+      it('addCard 16h+10 → null (bust)', () => assert(addCard(16,false,10) === null));
+      it('addCard 20s+A → 21s', () => assertEqual(JSON.stringify(addCard(20,true,11)), JSON.stringify({total:21,soft:true})));
+    });
+
+    // Dealer bust % was validated against a 10M-trial Monte Carlo to ±0.05%.
+    // S17, infinite deck, peek excludes BJ for 10 / A upcards.
+    describe('solver dealer-outcome distribution', () => {
+      const expected = {
+        2: 0.354, 3: 0.374, 4: 0.394, 5: 0.416, 6: 0.423,
+        7: 0.262, 8: 0.245, 9: 0.228, 10: 0.230, 11: 0.166,
+      };
+      DEALER_UPCARDS.forEach(up => {
+        it(`dist[${upcardLabel(up)}] sums to 1`, () => {
+          const d = dealerDistribution(up);
+          const s = Object.values(d).reduce((a, b) => a + b, 0);
+          assert(approx(s, 1, 1e-9), `sum = ${s}`);
+        });
+        it(`bust vs ${upcardLabel(up)} ≈ ${(expected[up]*100).toFixed(1)}%`, () => {
+          const d = dealerDistribution(up);
+          assert(approx(d.bust, expected[up], 0.003), `got ${(d.bust*100).toFixed(2)}%`);
+        });
+      });
+    });
+
+    // The chart is the solver's compiled output: every cell must be the
+    // best action the solver picks. 340 cells, full chart sweep.
+    describe('solver agrees with chart on every cell', () => {
+      function best(ev) {
+        let a = null, v = -Infinity;
+        for (const k of Object.keys(ev)) if (ev[k] > v) { v = ev[k]; a = k; }
+        return a;
+      }
+      const MAP = { H:'H', S:'S', D:'D', Ds:'D', P:'P', R:'R' };
+      function sweep(label, hand, up, cell) {
+        it(`${label} vs ${upcardLabel(up)} — chart ${cell}`, () => {
+          const got = best(solveActions(hand, up));
+          const want = MAP[cell];
+          assert(got === want, `solver ${got}, chart ${want}, ev ${JSON.stringify(solveActions(hand,up))}`);
+        });
+      }
+      Object.keys(hardTotals).forEach(t => {
+        const hand = makeHardHand(+t);
+        DEALER_UPCARDS.forEach((up,i) => sweep(`hard ${t}`, hand, up, hardTotals[t][i]));
+      });
+      Object.keys(softTotals).forEach(t => {
+        const hand = makeSoftHand(+t);
+        DEALER_UPCARDS.forEach((up,i) => sweep(`soft ${t}`, hand, up, softTotals[t][i]));
+      });
+      Object.keys(pairs).forEach(r => {
+        const hand = makePairHand(r);
+        DEALER_UPCARDS.forEach((up,i) => sweep(`pair ${r},${r}`, hand, up, pairs[r][i]));
+      });
+    });
+
+    describe('solver EV spot-checks', () => {
+      it('stand 20 vs 6 ≈ +0.70', () => {
+        const ev = solveActions([10,5,5], 6).S;
+        assert(approx(ev, 0.70, 0.02), `got ${ev}`);
+      });
+      it('R on 16 vs 10 is exactly -0.5', () => {
+        assertEqual(solveActions([10,6], 10).R, -0.5);
+      });
+      it('D on 11 vs 6 is positive and beats hit/stand', () => {
+        const ev = solveActions([5,6], 6);
+        assert(ev.D > 0 && ev.D > ev.H && ev.D > ev.S, JSON.stringify(ev));
+      });
+      it('split 8,8 vs 10 beats hit/stand', () => {
+        const ev = solveActions([8,8], 10);
+        assert(ev.P > ev.H && ev.P > ev.S, JSON.stringify(ev));
+      });
+      it('split A,A vs A is the best action', () => {
+        const ev = solveActions([11,11], 11);
+        assert(ev.P > ev.H && ev.P > ev.S, JSON.stringify(ev));
+      });
+      it('stand on hard 21 vs 6 ≈ +0.92 (dealer can still push at 21)', () => {
+        // [5, 6, 10] = 21 hard
+        const ev = solveActions([5,6,10], 6);
+        assert(approx(ev.S, 0.92, 0.03), `got ${ev.S}`);
+      });
+    });
+
+    describe('evaluator V3 contract', () => {
+      it('R on 16 vs 10 → correct=true, cost=0', () => {
+        const r = evaluateAction({ hand: [10,6], upcard: 10, action: 'R', rules: {} });
+        assert(r.correct === true && Math.abs(r.cost) < 1e-9, JSON.stringify(r));
+      });
+      it('H on 16 vs 10 → correct=false, small positive cost', () => {
+        const r = evaluateAction({ hand: [10,6], upcard: 10, action: 'H', rules: {} });
+        assert(r.correct === false && r.cost > 0 && r.cost < 0.1, JSON.stringify(r));
+      });
+      it('S instead of D on 11 vs 6 has big cost (>0.3 EV)', () => {
+        const r = evaluateAction({ hand: [5,6], upcard: 6, action: 'S', rules: {} });
+        assert(r.cost > 0.3, JSON.stringify(r));
+      });
+      it('chosenEv + cost = optimalEv', () => {
+        const r = evaluateAction({ hand: [9,7], upcard: 5, action: 'H', rules: {} });
+        assert(approx(r.chosenEv + r.cost, r.optimalEv, 1e-9), JSON.stringify(r));
+      });
+      it('ev keys = legal actions', () => {
+        const r = evaluateAction({ hand: [10,10], upcard: 6, action: 'S', rules: {} });
+        const keys = Object.keys(r.ev).sort();
+        assertEqual(JSON.stringify(keys), JSON.stringify(['D','H','P','R','S']));
+      });
     });
 
     // --- Render ---

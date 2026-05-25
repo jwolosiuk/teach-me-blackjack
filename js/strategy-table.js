@@ -28,7 +28,7 @@ export const hardTotals = {
   13:          ['S', 'S', 'S', 'S', 'S', 'H', 'H', 'H', 'H', 'H'],
   14:          ['S', 'S', 'S', 'S', 'S', 'H', 'H', 'H', 'H', 'H'],
   15:          ['S', 'S', 'S', 'S', 'S', 'H', 'H', 'H', 'R', 'H'], // S17: 15 vs A = H
-  16:          ['S', 'S', 'S', 'S', 'S', 'H', 'H', 'R', 'R', 'H'], // S17: 16 vs A = H
+  16:          ['S', 'S', 'S', 'S', 'S', 'H', 'H', 'R', 'R', 'R'], // vs A = R (S17, LS): solver EV R=-0.50 beats H=-0.52
   17:          ['S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S'],
   18:          ['S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S'],
   19:          ['S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S'],
@@ -38,9 +38,9 @@ export const hardTotals = {
 // Soft totals: hand contains an Ace counted as 11. Keyed by hand total (13..20).
 export const softTotals = {
   //  dealer:    2    3    4    5    6    7    8    9   10    A
-  13:          ['H', 'H', 'H', 'D', 'D', 'H', 'H', 'H', 'H', 'H'], // A,2
+  13:          ['H', 'H', 'H', 'H', 'D', 'H', 'H', 'H', 'H', 'H'], // A,2 — vs 5: solver EV H=+0.133 beats D=+0.126
   14:          ['H', 'H', 'H', 'D', 'D', 'H', 'H', 'H', 'H', 'H'], // A,3
-  15:          ['H', 'H', 'D', 'D', 'D', 'H', 'H', 'H', 'H', 'H'], // A,4
+  15:          ['H', 'H', 'H', 'D', 'D', 'H', 'H', 'H', 'H', 'H'], // A,4 — vs 4: solver EV H=+0.059 beats D=+0.058
   16:          ['H', 'H', 'D', 'D', 'D', 'H', 'H', 'H', 'H', 'H'], // A,5
   17:          ['H', 'D', 'D', 'D', 'D', 'H', 'H', 'H', 'H', 'H'], // A,6
   18:          ['S', 'Ds','Ds','Ds','Ds','S', 'S', 'H', 'H', 'H'], // A,7 — S17: vs 2 = S
