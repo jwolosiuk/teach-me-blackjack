@@ -1,11 +1,11 @@
 // Practice-mode situation dealer.
 //
-// 10% of every deal is uniform random across the (category, subType)
+// 25% of every deal is uniform random across the (category, subType)
 // buckets — pick a bucket, then pick a random cell inside. With ~10
 // active buckets (mimic-hard, mimic-soft, hardTotals-hard, …) every
 // sub-skill gets equal exploration time regardless of how many cells
 // it owns in the chart.
-// The remaining 90% is exploitation: weighted by the player's per-bucket
+// The remaining 75% is exploitation: weighted by the player's per-bucket
 // observed EV loss (cost / total). New users with no stats fall back to
 // the same uniform exploration on every deal.
 
@@ -16,7 +16,7 @@ const HARD_KEYS = Object.keys(hardTotals).map(Number);
 const SOFT_KEYS = Object.keys(softTotals).map(Number);
 const PAIR_KEYS = Object.keys(pairs);
 
-const EXPLORATION_RATE = 0.10;
+const EXPLORATION_RATE = 0.25;
 
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];

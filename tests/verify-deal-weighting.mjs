@@ -60,7 +60,7 @@ const skewed = tally(leakSurrender, N);
 for (const [k, v] of Object.entries(skewed)) {
   console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}  ${pct(v, N)}`);
 }
-console.log('\nExpect surrender ~90% from exploitation + 1% exploration = ~91%. Others get ~1-2% each from exploration alone (2-sub cats get 2%).');
+console.log('\nExpect surrender ~75% exploit + 2.5% exploration = ~78%. Others get ~2.5-5% each from exploration alone (2-sub cats get 5%, single-sub 2.5%).');
 
 // 3. Two leaky buckets, doubles 2x heavier than mimic.
 console.log('\nMimic leaks 0.02/decision, double leaks 0.04/decision (everything else perfect):');
@@ -84,4 +84,4 @@ for (const [k, v] of Object.entries(twoLeaksRes)) {
 //   mimic ~30% (~28% exploit + 2% exploration from 2 sub-buckets)
 //   double ~64% (~62% exploit + 2% exploration)
 //   others ~1-2% each (exploration only).
-console.log('\nExpect double ~64%, mimic ~30%, others ~1-2% each (10% exploration spread across 10 sub-buckets).');
+console.log('\nExpect double ~57%, mimic ~28%, others ~2-5% each (25% exploration spread across 10 sub-buckets).');
