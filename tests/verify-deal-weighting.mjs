@@ -25,8 +25,10 @@ function pct(c, total) { return ((c / total) * 100).toFixed(1) + '%'; }
 
 const N = 20000;
 
-// 1. No stats → uniform exploration only.
-console.log('No stats (should be roughly uniform — 10% exploration is the only sampler):');
+// 1. No stats → exploration only. Exploration is uniform OVER CATEGORIES,
+//    so each of the 6 should land at ~16.7%, regardless of how many cells
+//    it owns in the chart.
+console.log('No stats (category-uniform exploration, each ~16.7%):');
 const baseline = tally(undefined, N);
 for (const [k, v] of Object.entries(baseline)) {
   console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}  ${pct(v, N)}`);
@@ -57,7 +59,7 @@ const skewed = tally(leakSurrender, N);
 for (const [k, v] of Object.entries(skewed)) {
   console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}  ${pct(v, N)}`);
 }
-console.log('\nExpect surrender ~90% (only nonzero-weight bucket) + ~3.5% from 10% uniform exploration = ~90% + ~0.4% ≈ 90%.');
+console.log('\nExpect surrender ~90% from exploitation, plus 1/6 × 10% ≈ 1.7% from exploration. Others get ~1.7% each from exploration alone.');
 
 // 3. Two leaky buckets, doubles 2x heavier than mimic.
 console.log('\nMimic leaks 0.02/decision, double leaks 0.04/decision (everything else perfect):');
@@ -76,12 +78,9 @@ for (const [k, v] of Object.entries(twoLeaksRes)) {
   console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}  ${pct(v, N)}`);
 }
 // mimic-hard weight: 2.0/90 = 0.0222; double-hard weight: 1.0/20 = 0.05
-// expected share (within the 90% exploit pool):
-//   mimic-hard:  0.0222 / (0.0222 + 0.05) = 0.308 → 27.7% of total
-//   double-hard: 0.05   / (0.0222 + 0.05) = 0.692 → 62.3% of total
-// plus 10% uniform exploration spread across categories:
-//   mimic uniform share ≈ (160/340)*10% ≈ 4.7%; double uniform ≈ (60/340)*10% ≈ 1.8%
-//   surrender uniform ≈ (40/340)*10% ≈ 1.2%; hardTotals ≈ (60/340)*10% ≈ 1.8%
-//   adjust ≈ (30/340)*10% ≈ 0.9%; split ≈ (100/340)*10% ≈ 2.9%
-// So expected: mimic ~32%, double ~64%, others ~2-3% each.
-console.log('\nExpect double ~64% (heavier per-decision leak), mimic ~32%, others ~2-3% (10% exploration only).');
+// 90% exploit pool: mimic ~31%, double ~69%. Plus 1.7% per category from
+// the 10% category-uniform exploration. So:
+//   mimic ~29% (27.7% exploit + 1.7% exploration)
+//   double ~64% (62.3% + 1.7%)
+//   others ~1.7% each (exploration share only — no exploit weight).
+console.log('\nExpect double ~64% (heavier per-decision leak), mimic ~29%, others ~1.7% each (category-uniform exploration share).');

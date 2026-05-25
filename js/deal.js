@@ -1,14 +1,15 @@
 // Practice-mode situation dealer.
 //
-// Vanilla mode (no stats) is uniform across the chart so every cell gets
-// equal practice. When stats are passed in, 90% of deals are drawn from
-// (category, hand-type) buckets weighted by the player's observed EV loss
-// per decision in that bucket (cost / total). The remaining 10% is pure
-// uniform exploration so the user keeps practicing what they're already
-// good at and discovers improvement / regression.
+// 10% of every deal is uniform random across CATEGORIES — pick a category
+// 1-in-6, then pick a random cell inside it. This is the exploration step
+// (so rare categories like `adjust` with only 3 cells get the same air-time
+// as `mimic` with ~150 cells; cell-uniform would starve them).
+// The remaining 90% is exploitation: weighted by the player's per-(cat,
+// subType) observed EV loss (cost / total). New users with no stats fall
+// back to the same category-uniform exploration on every deal.
 
 import { hardTotals, softTotals, pairs, DEALER_UPCARDS } from './strategy-table.js';
-import { classifyDecision, getOptimalAction } from './strategy.js';
+import { classifyDecision, getOptimalAction, RULE_CATEGORIES } from './strategy.js';
 
 const HARD_KEYS = Object.keys(hardTotals).map(Number);
 const SOFT_KEYS = Object.keys(softTotals).map(Number);
@@ -53,6 +54,7 @@ function shuffle(arr) {
 // Bucket keys are 'category-subType' (e.g. 'split-always', 'mimic-hard').
 const CELLS = [];
 const BUCKETS = {};
+const CELLS_BY_CATEGORY = {};
 
 function classifyForBucket(hand, up) {
   return classifyDecision(hand, up, getOptimalAction(hand, up));
@@ -60,8 +62,9 @@ function classifyForBucket(hand, up) {
 
 function indexCell(cell) {
   CELLS.push(cell);
-  const key = `${cell.cat}-${cell.subType}`;
-  (BUCKETS[key] ||= []).push(cell);
+  const subKey = `${cell.cat}-${cell.subType}`;
+  (BUCKETS[subKey] ||= []).push(cell);
+  (CELLS_BY_CATEGORY[cell.cat] ||= []).push(cell);
 }
 
 for (const total of HARD_KEYS) {
@@ -121,13 +124,21 @@ function pickWeightedBucketKey(stats) {
   return keys[keys.length - 1];
 }
 
+function exploreCell() {
+  // Uniform over the 6 rule categories, then uniform over cells in that
+  // category. Each category gets 1/6 share of exploration deals regardless
+  // of how many cells it owns in the chart.
+  const cat = randomItem(RULE_CATEGORIES);
+  const inCat = CELLS_BY_CATEGORY[cat];
+  return inCat && inCat.length ? randomItem(inCat) : randomItem(CELLS);
+}
+
 export function dealSituation(stats) {
-  // Uniform exploration over every chart cell.
   if (!stats || Math.random() < EXPLORATION_RATE) {
-    return cellToSituation(randomItem(CELLS));
+    return cellToSituation(exploreCell());
   }
   // Exploitation: bias toward where the player is leaking EV.
   const bucketKey = pickWeightedBucketKey(stats);
-  if (!bucketKey) return cellToSituation(randomItem(CELLS));
+  if (!bucketKey) return cellToSituation(exploreCell());
   return cellToSituation(randomItem(BUCKETS[bucketKey]));
 }
