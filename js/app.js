@@ -240,6 +240,7 @@ function renderPracticeStats() {
   $('stat-3').textContent = String(practiceStats.total);
   renderAnalytics($('analytics'), practiceStats, {
     sortBy: 'rolling',
+    showRolling: true,
     onReset: resetPracticeStats,
   });
   persist();

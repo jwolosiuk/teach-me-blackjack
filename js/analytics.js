@@ -177,14 +177,17 @@ function rollingText(rolling) {
   return fmtPctLoss(rolling);
 }
 
-function statsHtml(d, freq, rolling) {
+function statsHtml(d, freq, rolling, showRolling) {
+  const rollingCell = showRolling
+    ? `<span class="cat-stat" title="Avg ev loss over the last few decisions — drives the practice sampler"><span class="num">${rollingText(rolling)}</span><span class="lbl">now</span></span>`
+    : '';
   return `
     <span class="cat-stats">
       <span class="cat-stat cat-stat-meta"><span class="num">${d.total}</span><span class="lbl">hands</span></span>
       <span class="cat-stat"><span class="num">${pctText(d.correct, d.total)}</span><span class="lbl">acc</span></span>
       <span class="cat-stat" title="Lifetime ev loss per decision in this category"><span class="num">${evText(d.cost, d.total)}</span><span class="lbl">ev</span></span>
       <span class="cat-stat"><span class="num">${adjText(d, freq)}</span><span class="lbl">adj</span></span>
-      <span class="cat-stat" title="Avg ev loss over the last few decisions — drives the practice sampler"><span class="num">${rollingText(rolling)}</span><span class="lbl">now</span></span>
+      ${rollingCell}
     </span>
   `;
 }
@@ -193,7 +196,7 @@ function freqBadge(freq) {
   return `<span class="cat-freq" title="Theoretical frequency under optimal play">${freqText(freq)}</span>`;
 }
 
-function subRowsHtml(byType, types, freqByType) {
+function subRowsHtml(byType, types, freqByType, showRolling) {
   return types.map(t => {
     const d = byType[t];
     const freq = freqByType?.[t] ?? 0;
@@ -205,14 +208,14 @@ function subRowsHtml(byType, types, freqByType) {
             <span class="sub-name">${TYPE_LABEL[t]}</span>
             ${freqBadge(freq)}
           </span>
-          ${statsHtml(d, freq, rolling)}
+          ${statsHtml(d, freq, rolling, showRolling)}
         </div>
       </div>
     `;
   }).join('');
 }
 
-function categoryHtml(key, data) {
+function categoryHtml(key, data, showRolling) {
   const info = CATEGORY_INFO[key];
   const freqEntry = CATEGORY_FREQ[key];
   const t = tone(data);
@@ -225,7 +228,7 @@ function categoryHtml(key, data) {
         <span class="cat-name">${escapeHtml(info.label)}${expandable ? '<span class="chev">▸</span>' : ''}</span>
         ${freqBadge(freqEntry.total)}
       </span>
-      ${statsHtml(data, freqEntry.total, rolling)}
+      ${statsHtml(data, freqEntry.total, rolling, showRolling)}
     </div>
     <div class="cat-desc">${escapeHtml(info.desc)}</div>
   `;
@@ -235,7 +238,7 @@ function categoryHtml(key, data) {
   return `
     <details class="cat-row ${t}" data-cat="${key}" ${isOpen ? 'open' : ''}>
       <summary>${headInner}</summary>
-      <div class="cat-subs">${subRowsHtml(data.byType, info.subTypes, freqEntry.byType)}</div>
+      <div class="cat-subs">${subRowsHtml(data.byType, info.subTypes, freqEntry.byType, showRolling)}</div>
     </details>
   `;
 }
@@ -251,7 +254,7 @@ function expanded(key) {
 //   'rolling' (practice)          — same metric the practice sampler uses:
 //                                   avg cost from each bucket's rolling window.
 //                                   What's being targeted right now.
-export function renderAnalytics(root, stats, { sortBy = 'adj', onReset = null } = {}) {
+export function renderAnalytics(root, stats, { sortBy = 'adj', onReset = null, showRolling = false } = {}) {
   const byCats = {};
   for (const c of RULE_CATEGORIES) byCats[c] = readCategory(stats, c);
   const all = overall(byCats);
@@ -282,7 +285,7 @@ export function renderAnalytics(root, stats, { sortBy = 'adj', onReset = null } 
     </div>
   `;
 
-  const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data)).join('');
+  const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data, showRolling)).join('');
   const resetHtml = onReset
     ? `<button class="analytics-reset" type="button">Reset stats</button>`
     : '';
