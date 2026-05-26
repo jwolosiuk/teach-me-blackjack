@@ -238,8 +238,21 @@ function renderPracticeStats() {
   $('stat-1').textContent = acc === null ? '—' : `${Math.round(acc * 100)}%`;
   $('stat-2').textContent = fmtPctLoss(evl);
   $('stat-3').textContent = String(practiceStats.total);
-  renderAnalytics($('analytics'), practiceStats, { sortBy: 'rolling' });
+  renderAnalytics($('analytics'), practiceStats, {
+    sortBy: 'rolling',
+    onReset: resetPracticeStats,
+  });
   persist();
+}
+
+// Wipe per-category breakdowns + rolling windows + accuracy/streak/cost
+// accumulators, but keep `total` so the header counter remains a lifetime
+// "hands you've practiced" badge.
+function resetPracticeStats() {
+  const total = practiceStats.total;
+  Object.assign(practiceStats, createStats());
+  practiceStats.total = total;
+  renderPracticeStats();
 }
 
 function cancelAdvance() {
@@ -294,8 +307,18 @@ function renderPlayStats() {
   const evl = avgEvLoss(playStats);
   $('stat-2').textContent = fmtPctLoss(evl);
   $('stat-3').textContent = String(playStats.hands);
-  renderAnalytics($('analytics'), playStats);
+  renderAnalytics($('analytics'), playStats, { onReset: resetPlayStats });
   persist();
+}
+
+// Same idea as practice — keep the lifetime hands counter at the top,
+// wipe the analytics buckets and any wins/losses/net so the breakdown
+// is a fresh window into the player's current play.
+function resetPlayStats() {
+  const hands = playStats.hands;
+  Object.assign(playStats, createPlayStats());
+  playStats.hands = hands;
+  renderPlayStats();
 }
 
 // ---------- bootstrap ----------

@@ -251,7 +251,7 @@ function expanded(key) {
 //   'rolling' (practice)          — same metric the practice sampler uses:
 //                                   avg cost from each bucket's rolling window.
 //                                   What's being targeted right now.
-export function renderAnalytics(root, stats, { sortBy = 'adj' } = {}) {
+export function renderAnalytics(root, stats, { sortBy = 'adj', onReset = null } = {}) {
   const byCats = {};
   for (const c of RULE_CATEGORIES) byCats[c] = readCategory(stats, c);
   const all = overall(byCats);
@@ -283,11 +283,15 @@ export function renderAnalytics(root, stats, { sortBy = 'adj' } = {}) {
   `;
 
   const rowsHtml = ordered.map(({ key, data }) => categoryHtml(key, data)).join('');
+  const resetHtml = onReset
+    ? `<button class="analytics-reset" type="button">Reset stats</button>`
+    : '';
 
   root.innerHTML = `
     <h2 class="analytics-title">By rule category</h2>
     ${overallHtml}
     <div class="cat-list">${rowsHtml}</div>
+    ${resetHtml}
   `;
 
   // Keep the in-memory expanded set in sync with user toggles. Without this,
@@ -299,4 +303,14 @@ export function renderAnalytics(root, stats, { sortBy = 'adj' } = {}) {
       if (d.open) expandedCats.add(k); else expandedCats.delete(k);
     });
   });
+
+  if (onReset) {
+    const btn = root.querySelector('.analytics-reset');
+    btn?.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm('Reset analytics? Per-category breakdowns and recent windows clear. The total hands counter at the top is kept.')) {
+        onReset();
+      }
+    });
+  }
 }
